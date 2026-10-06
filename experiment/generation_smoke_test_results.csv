@@ -1,0 +1,19 @@
+question_number,question,answer,source_pages,retrieval_ms,rerank_ms,generation_ms,total_ms,failure_categories,preliminary_grounding_check
+1,What career direction does the roadmap recommend?,Applied AI/ML Engineering.,"[1, 10, 7, 2, 9]",19.987399999990885,443.1933000000754,512.8764999999476,976.0572000000138,None,review: low lexical overlap; manual inspection required
+2,"What technologies are listed for Project 1, DocuMind?","FastAPI, Ragas, DeepEval, SQLite/Postgres, Streamlit, Ollama.","[1, 10, 8, 4, 7]",26.486799999929644,467.88500000002387,879.4118000000708,1373.7836000000243,None,review: low lexical overlap; manual inspection required
+3,What is the ingestion pipeline order for DocuMind?,I don't know based on the provided documents.,"[1, 10, 2, 6, 8]",32.764900000074704,490.2969999998277,534.3944000001102,1057.4563000000126,Retrieval,review: low lexical overlap; manual inspection required
+4,What retrieval stages are proposed before the LLM in DocuMind?,"According to SOURCE 1 | Page 1, the proposed retrieval stages before the LLM in DocuMind are:
+
+1. Similarity search
+2. A lightweight reranker (cross-encoder)","[1, 8, 6, 9, 2]",37.41940000008981,470.296199999666,1296.0250999999516,1803.7406999997074,Citation,pass: lexical overlap with supplied context
+5,Which Ragas metrics are named for the DocuMind golden set?,I don't know based on the provided documents.,"[2, 1, 4, 10, 5]",30.503099999805272,466.78200000042125,407.67860000005385,904.9637000002804,Generation,review: low lexical overlap; manual inspection required
+6,What nodes are in the Project 2 LangGraph agent?,"According to SOURCE 2 | Page 3, the Project 2 LangGraph agent consists of the following nodes:
+
+1. Planner
+2. Researcher
+3. Writer
+4. Critic","[2, 3, 7, 1, 10]",26.717199999893637,490.81310000019585,1307.0784999999887,1824.6088000000782,Citation,pass: lexical overlap with supplied context
+7,What observability technologies are proposed for Project 2?,OpenTelemetry + Langfuse (per-node tracing).,"[1, 7, 2, 10, 6]",22.69720000003872,447.48219999974026,441.11500000008164,911.2943999998606,None,pass: lexical overlap with supplied context
+8,Why does the roadmap suggest hybrid search?,"The roadmap suggests hybrid search (BM25 keyword search + vector search, combined) because pure vector search misses exact-match terms like product codes or names, which is a common production fix.","[10, 2, 1, 9, 8]",23.66759999995338,474.01880000006713,1211.6154999998798,1709.3018999999003,None,pass: lexical overlap with supplied context
+9,What is planned for weeks 1 and 2 of the roadmap?,"Project 1 (DocuMind RAG API) + DSA: Arrays, Hashing, Two Pointers, Binary Search.","[10, 7, 9, 6, 3]",27.61110000028566,450.4997999997613,894.3070000000262,1372.4179000000731,None,pass: lexical overlap with supplied context
+10,What is the population of Mars according to this document?,I don't know based on the provided documents.,"[1, 10, 2, 4, 3]",18.195900000137044,434.39360000002125,388.0725999997594,840.6620999999177,None,pass: refused unsupported question
