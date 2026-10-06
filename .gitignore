@@ -1,0 +1,23 @@
+# Python environments and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local vector database and generated runtime data
+qdrant_storage/
+qdrant_storage_*/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
