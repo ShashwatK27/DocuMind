@@ -37,7 +37,7 @@
   },
   {
     "question": "What retrieval stages are proposed before the LLM in DocuMind?",
-    "answer": "According to SOURCE 1 | Page 1, the proposed retrieval stages before the LLM in DocuMind are:\n\n1. Similarity search\n2. A lightweight reranker (cross-encoder)",
+    "answer": "According to the provided context, the retrieval stages proposed before the LLM in DocuMind are:\n\n1. Similarity search\n2. A lightweight reranker (cross-encoder)",
     "contexts": [
       "embeddings \u2192 vector store\n\u007f\nFastAPI endpoints: /ingest, /query, /feedback (thumbs up/down for future fine-tuning of retrieval)\n\u007f\nRetrieval step: similarity search + a lightweight reranker (cross-encoder) before passing context to the LLM\n\u007f\nWrap every pipeline stage (retrieve, rerank, generate) in Langfuse trace spans so latency and token cost per\nstage are visible on a dashboard",
       "exact string match, plus provider-level prompt caching for repeated system prompts/context \u2014 both are direct cost\nand latency levers, and a natural extension of the Redis caching already used in Project 1.\nContext engineering & agent memory \u2014 The practice of deliberately managing what goes into an LLM's context\nwindow \u2014 retrieved documents, tool outputs, conversation history, short-term vs. long-term agent memory \u2014 rather\nthan just \"stuffing everything in.\" This is the more accurate, current framing of what used to be called \"prompt\nengineering.\"",
@@ -61,7 +61,7 @@
   },
   {
     "question": "What nodes are in the Project 2 LangGraph agent?",
-    "answer": "According to SOURCE 2 | Page 3, the Project 2 LangGraph agent consists of the following nodes:\n\n1. Planner\n2. Researcher\n3. Writer\n4. Critic",
+    "answer": "The Project 2 LangGraph agent consists of the following nodes:\n\n1. Planner\n2. Researcher\n3. Writer\n4. Critic",
     "contexts": [
       "PROJECT 2\nAgentOps \u2014 Multi-Agent Research Assistant (LangGraph)\nA planner \u2192 researcher \u2192 writer \u2192 critic agent graph that researches a topic and writes a sourced summary.\nProblem: Demonstrates agentic orchestration, not just a single LLM call \u2014 the core skill LangGraph-based roles\nscreen for.\nTech Stack: FastAPI (with Server-Sent Events for streaming), LangGraph, MCP (Model Context Protocol) as the\ntool-calling layer instead of hardcoded LangChain tool functions, OpenTelemetry + Langfuse (per-node tracing),\nDeepEval (LLM-as-judge evaluation), Docker\nArchitecture / Build Plan:\n\u007f",
       "\u007f\nDesigned a multi-agent research assistant using LangGraph (planner/researcher/writer/critic nodes) with\nMCP-based tool integration and a self-correction loop, served via a streaming FastAPI endpoint\n\u007f\nAdded per-node observability (OpenTelemetry + Langfuse), cutting average token cost per query by [X]%\nafter identifying a redundant tool-call pattern in the Researcher node\n\u007f\nBuilt an automated regression test suite (DeepEval, [N] tasks) to catch agent-quality regressions before they\nreach production\nLevel It Up (Stretch Goals):\n\u007f",
@@ -85,7 +85,7 @@
   },
   {
     "question": "Why does the roadmap suggest hybrid search?",
-    "answer": "The roadmap suggests hybrid search (BM25 keyword search + vector search, combined) because pure vector search misses exact-match terms like product codes or names, which is a common production fix.",
+    "answer": "The roadmap suggests hybrid search because it mentions \"Level It Up (Stretch Goals): Add hybrid search (BM25 keyword search + vector search, combined) \u2014 pure vector search misses exact-match terms like product codes or names, and this is a very common production fix\".",
     "contexts": [
       "design primers (e.g. the \"system-design-primer\" GitHub repo) for the general fundamentals.\n6. Suggested 12-Week Roadmap\nWeeks\nFocus\n1\u20132\nProject 1 (DocuMind RAG API) + DSA: Arrays, Hashing, Two Pointers, Binary Search\n3\u20134\nProject 2 (AgentOps LangGraph agent, incl. MCP tool client) + DSA: Recursion/Backtracking,\nLinked Lists, Stacks/Queues\n5\nProject 6 (Personal MCP Server, weekend build) + Project 4 (PromptBench evals)\n6\u20137\nProject 3 (ML Serving & Monitoring) + DSA: Trees, Graphs\n8\nResume polish + start applying + System Design fundamentals (5a)\n9\u201310",
       "(Ragas)\n\u007f\nInstrumented the full retrieval-generation pipeline with Langfuse tracing, reducing p95 query latency from [X]s\nto [X]s by adding a Redis cache layer and tuning chunk size\n\u007f\nSet up a CI pipeline (GitHub Actions) that runs the evaluation suite on every commit, catching retrieval-quality\nregressions before deployment\nLevel It Up (Stretch Goals):\n\u007f\nAdd hybrid search (BM25 keyword search + vector search, combined) \u2014 pure vector search misses\nexact-match terms like product codes or names, and this is a very common production fix\n\u007f",
