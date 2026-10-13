@@ -30,13 +30,17 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
     enrich_metadata: bool = True
 
-    # --- Retrieval (D-4, D-5, D-11) ---------------------------------------
+    # --- Retrieval (D-4, D-5, D-11, D-15) ---------------------------------
     # Wide dense candidate pool -> cross-encoder rerank -> page diversify.
-    # Hybrid BM25 lost on this single-doc corpus (D-11); kept off by default.
     retrieval_top_k: int = 20
     reranker_enabled: bool = True
     reranker_top_k: int = 5          # final chunks handed to the LLM
     max_chunks_per_page: int = 1     # page diversification cap (D-5)
+
+    # Hybrid retrieval: augment the dense pool with BM25's top lexical matches,
+    # then let the reranker decide. Measured as a clean win on the 4-document
+    # corpus (D-15): Recall@5 +0.017, MRR +0.038, coverage +0.032, no regressions.
+    hybrid_enabled: bool = True
 
     # --- Generation (D-9, D-12) -------------------------------------------
     # Ollama llama3.2:3b, temp 0, answer-preferring Prompt B, with a
