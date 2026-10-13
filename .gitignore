@@ -17,6 +17,11 @@ qdrant_storage/
 qdrant_storage_*/
 experiment/feedback_log.jsonl
 
+# Third-party evaluation corpus (fetched via scripts/fetch_corpus.py).
+# The user's own roadmap PDF stays tracked.
+data/documents/*.pdf
+!data/documents/Shashwat_AI_ML_Project_Roadmap.pdf
+
 # OS and editor files
 .DS_Store
 Thumbs.db

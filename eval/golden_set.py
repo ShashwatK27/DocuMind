@@ -15,6 +15,9 @@ UNKNOWN_ANSWER = "I don't know based on the provided documents."
 
 # Known source documents (filenames as they appear in data/documents/).
 ROADMAP = "Shashwat_AI_ML_Project_Roadmap.pdf"
+ATTENTION = "attention_is_all_you_need.pdf"
+BERT = "bert_devlin_2019.pdf"
+RAG = "retrieval_augmented_generation_lewis_2020.pdf"
 
 golden_set: list[dict] = [
     # ---- Page 1: career direction + Project 1 DocuMind ----
@@ -75,6 +78,32 @@ golden_set: list[dict] = [
     # ---- Page 10: sources + 12-week roadmap ----
     {"source": ROADMAP, "question": "What book is recommended for ML system design?", "ground_truth": "Designing Machine Learning Systems by Chip Huyen.", "source_pages": [10], "type": "factual"},
     {"source": ROADMAP, "question": "What is planned for weeks 1 and 2 of the roadmap?", "ground_truth": "Project 1, DocuMind RAG API, plus DSA topics: Arrays, Hashing, Two Pointers, and Binary Search.", "source_pages": [10], "type": "multi_context"},
+
+    # ---- attention_is_all_you_need.pdf (Vaswani et al., 2017) ----
+    {"source": ATTENTION, "question": "What architecture does the Attention Is All You Need paper propose?", "ground_truth": "The Transformer, a model architecture based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.", "source_pages": [1], "type": "factual"},
+    {"source": ATTENTION, "question": "What BLEU score does the Transformer reach on WMT 2014 English-to-French translation?", "ground_truth": "A new single-model state-of-the-art BLEU score of 41.8 on the English-to-French task.", "source_pages": [1], "type": "factual"},
+    {"source": ATTENTION, "question": "How many layers make up the Transformer's encoder stack?", "ground_truth": "The encoder is composed of a stack of N = 6 identical layers.", "source_pages": [3], "type": "factual"},
+    {"source": ATTENTION, "question": "How many attention heads does the base Transformer use?", "ground_truth": "h = 8 parallel attention layers, or heads, each of dimension dk = dv = 64.", "source_pages": [5], "type": "factual"},
+    {"source": ATTENTION, "question": "What is the model dimension d_model in the Transformer?", "ground_truth": "The sub-layers and embedding layers produce outputs of dimension dmodel = 512.", "source_pages": [3], "type": "factual"},
+    {"source": ATTENTION, "question": "Which optimizer is used to train the Transformer?", "ground_truth": "The Adam optimizer; the learning rate is varied over the course of training.", "source_pages": [7], "type": "factual"},
+    {"source": ATTENTION, "question": "What regularization does the base Transformer apply for dropout and label smoothing?", "ground_truth": "Residual dropout with Pdrop = 0.1 and label smoothing of value 0.1.", "source_pages": [8], "type": "multi_context"},
+
+    # ---- bert_devlin_2019.pdf (Devlin et al., 2019) ----
+    {"source": BERT, "question": "What does the acronym BERT stand for?", "ground_truth": "Bidirectional Encoder Representations from Transformers.", "source_pages": [1], "type": "factual"},
+    {"source": BERT, "question": "What pre-training objective does BERT introduce?", "ground_truth": "A masked language model (MLM) that randomly masks some of the input tokens.", "source_pages": [1], "type": "factual"},
+    {"source": BERT, "question": "Besides masked language modeling, what second pre-training task does BERT use?", "ground_truth": "A next sentence prediction task that is jointly pre-trained.", "source_pages": [2], "type": "factual"},
+    {"source": BERT, "question": "What are the two BERT model sizes and their parameter counts?", "ground_truth": "BERTBASE with 110M total parameters and BERTLARGE with 340M total parameters.", "source_pages": [3], "type": "multi_context"},
+    {"source": BERT, "question": "What special tokens does BERT add to its input?", "ground_truth": "A [CLS] classification token in front of every input and a [SEP] separator token.", "source_pages": [3, 4], "type": "factual"},
+    {"source": BERT, "question": "What tokenization does BERT use, and how much of the input is masked?", "ground_truth": "WordPiece embeddings; 15% of all WordPiece tokens are masked at random.", "source_pages": [4], "type": "multi_context"},
+
+    # ---- retrieval_augmented_generation_lewis_2020.pdf (Lewis et al., 2020) ----
+    {"source": RAG, "question": "What two kinds of memory do RAG models combine?", "ground_truth": "Pre-trained parametric memory combined with non-parametric memory for language generation.", "source_pages": [1, 2], "type": "factual"},
+    {"source": RAG, "question": "What serves as the non-parametric memory in RAG?", "ground_truth": "A dense vector index of Wikipedia, accessed with a pre-trained neural retriever.", "source_pages": [1], "type": "factual"},
+    {"source": RAG, "question": "What retriever and generator components does RAG use?", "ground_truth": "A Dense Passage Retriever (DPR) and a BART sequence-to-sequence generator.", "source_pages": [2], "type": "multi_context"},
+    {"source": RAG, "question": "How does RAG find the top documents for a query?", "ground_truth": "Maximum Inner Product Search (MIPS) to find the top-K documents.", "source_pages": [2, 3], "type": "factual"},
+    {"source": RAG, "question": "What are the two RAG model formulations?", "ground_truth": "RAG-Sequence uses the same retrieved document for every token; RAG-Token can use a different document per token.", "source_pages": [3], "type": "multi_context"},
+    {"source": RAG, "question": "How was the Wikipedia knowledge source prepared for RAG?", "ground_truth": "The December 2018 Wikipedia dump, split into disjoint 100-word chunks, totaling 21M documents.", "source_pages": [4], "type": "multi_context"},
+    {"source": RAG, "question": "What library and index structure does RAG use for similarity search?", "ground_truth": "A single MIPS index built with FAISS using a Hierarchical Navigable Small World approximation.", "source_pages": [4], "type": "factual"},
 
     # ---- Unanswerable (grounding guard); source None = not in any document ----
     {"source": None, "question": "What is the population of Mars according to this document?", "ground_truth": UNKNOWN_ANSWER, "source_pages": [], "type": "unanswerable"},
