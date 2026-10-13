@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     # corpus (D-15): Recall@5 +0.017, MRR +0.038, coverage +0.032, no regressions.
     hybrid_enabled: bool = True
 
+    # Query-aware fusion (D-17): after reranking, blend the cross-encoder score
+    # with the query-normalized BM25 score (reranker_z + alpha * bm25_z) so an
+    # exact-match chunk both signals agree on rises into the top-5. alpha swept
+    # on the 4-doc corpus: 0.15 is the knee (Recall@5 0.949->0.983, MRR +0.007,
+    # no regressions); >=0.5 starts eroding MRR, 1.0 adds new misses. 0.0
+    # disables (pure reranker). Only active with hybrid.
+    fusion_alpha: float = 0.15
+
     # --- Generation (D-9, D-12) -------------------------------------------
     # Ollama llama3.2:3b, temp 0, answer-preferring Prompt B, with a
     # deterministic citation-stripping backstop (Python owns citations).

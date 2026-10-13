@@ -17,7 +17,7 @@ Shashwat_AI_ML_Project_Roadmap.pdf,What tool is suggested to load-test the DocuM
 Shashwat_AI_ML_Project_Roadmap.pdf,What nodes are in the Project 2 LangGraph agent?,factual,True,True,1.0,1.0
 Shashwat_AI_ML_Project_Roadmap.pdf,What observability technologies are proposed for Project 2?,multi_context,True,True,0.3333333333333333,0.5
 Shashwat_AI_ML_Project_Roadmap.pdf,What protocol does Project 2 use for tool calling instead of hardcoded LangChain tools?,factual,True,True,1.0,1.0
-Shashwat_AI_ML_Project_Roadmap.pdf,What does the Critic node do in the AgentOps graph?,factual,True,True,1.0,0.2222222222222222
+Shashwat_AI_ML_Project_Roadmap.pdf,What does the Critic node do in the AgentOps graph?,factual,True,True,1.0,0.1111111111111111
 Shashwat_AI_ML_Project_Roadmap.pdf,What long-term memory stretch goal is proposed for AgentOps?,factual,True,True,1.0,0.8571428571428571
 Shashwat_AI_ML_Project_Roadmap.pdf,What is model routing in Project 2?,factual,True,True,1.0,1.0
 Shashwat_AI_ML_Project_Roadmap.pdf,What guardrail addresses runaway agent loops?,factual,True,True,1.0,1.0
@@ -42,11 +42,11 @@ attention_is_all_you_need.pdf,What architecture does the Attention Is All You Ne
 attention_is_all_you_need.pdf,What BLEU score does the Transformer reach on WMT 2014 English-to-French translation?,factual,True,True,1.0,1.0
 attention_is_all_you_need.pdf,How many layers make up the Transformer's encoder stack?,factual,True,True,1.0,1.0
 attention_is_all_you_need.pdf,How many attention heads does the base Transformer use?,factual,True,True,1.0,0.8
-attention_is_all_you_need.pdf,What is the model dimension d_model in the Transformer?,factual,True,True,0.3333333333333333,0.7142857142857143
-attention_is_all_you_need.pdf,Which optimizer is used to train the Transformer?,factual,True,False,0.0,0.4
+attention_is_all_you_need.pdf,What is the model dimension d_model in the Transformer?,factual,True,True,0.5,0.2857142857142857
+attention_is_all_you_need.pdf,Which optimizer is used to train the Transformer?,factual,True,True,0.2,1.0
 attention_is_all_you_need.pdf,What regularization does the base Transformer apply for dropout and label smoothing?,multi_context,True,True,1.0,1.0
-bert_devlin_2019.pdf,What does the acronym BERT stand for?,factual,True,True,0.5,0.25
-bert_devlin_2019.pdf,What pre-training objective does BERT introduce?,factual,True,True,1.0,0.42857142857142855
+bert_devlin_2019.pdf,What does the acronym BERT stand for?,factual,True,True,0.3333333333333333,0.25
+bert_devlin_2019.pdf,What pre-training objective does BERT introduce?,factual,True,True,1.0,1.0
 bert_devlin_2019.pdf,"Besides masked language modeling, what second pre-training task does BERT use?",factual,True,True,1.0,0.75
 bert_devlin_2019.pdf,What are the two BERT model sizes and their parameter counts?,multi_context,True,True,1.0,1.0
 bert_devlin_2019.pdf,What special tokens does BERT add to its input?,factual,True,True,1.0,0.875
@@ -57,7 +57,7 @@ retrieval_augmented_generation_lewis_2020.pdf,What retriever and generator compo
 retrieval_augmented_generation_lewis_2020.pdf,How does RAG find the top documents for a query?,factual,True,True,1.0,0.3333333333333333
 retrieval_augmented_generation_lewis_2020.pdf,What are the two RAG model formulations?,multi_context,True,True,0.5,0.8571428571428571
 retrieval_augmented_generation_lewis_2020.pdf,How was the Wikipedia knowledge source prepared for RAG?,multi_context,True,True,1.0,0.875
-retrieval_augmented_generation_lewis_2020.pdf,What library and index structure does RAG use for similarity search?,factual,True,False,0.0,0.3
+retrieval_augmented_generation_lewis_2020.pdf,What library and index structure does RAG use for similarity search?,factual,True,True,0.2,0.3
 ,What is the population of Mars according to this document?,unanswerable,False,False,0.0,
 ,What monthly salary does this roadmap guarantee?,unanswerable,False,False,0.0,
 ,"Which cloud provider (AWS, GCP, or Azure) does the roadmap require?",unanswerable,False,False,0.0,

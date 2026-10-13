@@ -1,9 +1,10 @@
-"""The retrieval stage: dense candidates -> cross-encoder rerank -> diversify.
+"""The retrieval stage: candidates -> cross-encoder rerank -> fuse -> diversify.
 
-This is the selected retrieval config (D-4, D-5, D-11): a wide dense pool of
-``retrieval_top_k`` candidates, re-ranked by a cross-encoder, then capped to one
-chunk per page and truncated to ``reranker_top_k`` final chunks. Dense-only;
-BM25 hybrid lost on this corpus (D-11) and is not wired in here.
+This is the selected retrieval config (D-4, D-5, D-11, D-15, D-17): a wide
+candidate pool (dense top-k, optionally augmented with BM25's top lexical
+matches), re-ranked by a cross-encoder, optionally blended with the lexical
+signal (query-aware fusion), then capped to one chunk per page and truncated to
+``reranker_top_k`` final chunks.
 
 The vector store is a module-level singleton so the heavy client/collection is
 built once. It connects to a Qdrant *server* when ``qdrant_url`` is set
@@ -32,6 +33,7 @@ class ScoredChunk:
     document: Document
     retrieval_score: float
     reranker_score: float | None = None
+    bm25_score: float | None = None
 
     @property
     def page(self) -> int | None:
@@ -162,18 +164,54 @@ def _hybrid_candidates(store: QdrantVectorStore, query: str, k: int,
     the whole pool, so BM25 can only *add* exact-match candidates (rare tokens it
     nails but dense similarity dilutes), never remove a dense one.
     """
+    bm_scores = bm25.get_scores(_tok(query))
+    key_to_bm = {_chunk_key(chunks[i]): float(bm_scores[i]) for i in range(len(chunks))}
+
     dense = store.similarity_search_with_score(query, k=k)
-    candidates = [ScoredChunk(document=d, retrieval_score=float(s)) for d, s in dense]
+    candidates = [
+        ScoredChunk(document=d, retrieval_score=float(s),
+                    bm25_score=key_to_bm.get(_chunk_key(d), 0.0))
+        for d, s in dense
+    ]
     seen = {_chunk_key(c.document) for c in candidates}
 
-    bm_scores = bm25.get_scores(_tok(query))
     bm_order = sorted(range(len(chunks)), key=lambda i: bm_scores[i], reverse=True)[:k]
     for i in bm_order:
         key = _chunk_key(chunks[i])
         if key not in seen:
             seen.add(key)
-            candidates.append(ScoredChunk(document=chunks[i], retrieval_score=0.0))
+            candidates.append(ScoredChunk(document=chunks[i], retrieval_score=0.0,
+                                          bm25_score=float(bm_scores[i])))
     return candidates
+
+
+def _zscore(values: list[float]) -> list[float]:
+    """Standardize a list of scores; all-equal input maps to zeros."""
+    n = len(values)
+    if n == 0:
+        return []
+    mean = sum(values) / n
+    var = sum((v - mean) ** 2 for v in values) / n
+    if var <= 1e-12:
+        return [0.0] * n
+    sd = var ** 0.5
+    return [(v - mean) / sd for v in values]
+
+
+def _fuse(candidates: list[ScoredChunk], alpha: float) -> None:
+    """Blend the cross-encoder score with the lexical (BM25) signal in place (D-17).
+
+    The reranker is a strong but general relevance model; on a multi-document
+    corpus it sometimes ranks the exact-match chunk just below the top-5 (the
+    optimizer page, the FAISS/HNSW page). BM25 nails those rare tokens. Fusing
+    the two *query-normalized* signals lets a chunk both agree on rise, without
+    letting either dominate. ``reranker_score`` is overwritten with the fused
+    value so the existing sort/diversify path uses it unchanged.
+    """
+    rr_z = _zscore([c.reranker_score for c in candidates])
+    bm_z = _zscore([c.bm25_score or 0.0 for c in candidates])
+    for c, rz, bz in zip(candidates, rr_z, bm_z):
+        c.reranker_score = rz + alpha * bz
 
 
 def _diversify(scored: list[ScoredChunk]) -> list[ScoredChunk]:
@@ -200,9 +238,10 @@ def retrieve(query: str, store: QdrantVectorStore | None = None, *,
 
     ``store`` defaults to the service singleton; the eval harness and tests pass
     an in-memory store so they run this exact code path against their own index.
-    Hybrid (BM25 + dense RRF) runs when ``use_hybrid`` is True (defaulting to
-    ``settings.hybrid_enabled``) and a ``chunks`` corpus + ``bm25`` index are
-    supplied; otherwise retrieval is dense-only.
+    Hybrid (dense pool augmented with BM25) runs when ``use_hybrid`` is True
+    (defaulting to ``settings.hybrid_enabled``) and a ``chunks`` corpus + ``bm25``
+    index are supplied; otherwise retrieval is dense-only. ``fusion_alpha`` then
+    blends the lexical signal into the final ranking (D-17).
     """
     store = store or get_store()
     use_hybrid = settings.hybrid_enabled if use_hybrid is None else use_hybrid
@@ -227,6 +266,10 @@ def retrieve(query: str, store: QdrantVectorStore | None = None, *,
         )
         for c, s in zip(candidates, scores):
             c.reranker_score = float(s)
+        # Query-aware fusion: nudge the ranking toward chunks the lexical index
+        # also likes, recovering exact-match pages the reranker buries (D-17).
+        if settings.fusion_alpha > 0 and any(c.bm25_score is not None for c in candidates):
+            _fuse(candidates, settings.fusion_alpha)
         candidates.sort(key=lambda c: c.reranker_score, reverse=True)
 
     return _diversify(candidates)
