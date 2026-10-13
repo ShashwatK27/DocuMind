@@ -1,0 +1,44 @@
+source,question,type,answerable,recall5,mrr,coverage
+Shashwat_AI_ML_Project_Roadmap.pdf,What career direction does the roadmap recommend?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,"What technologies are listed for Project 1, DocuMind?",multi_context,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What is the ingestion pipeline order for DocuMind?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What retrieval stages are proposed before the LLM in DocuMind?,factual,True,True,1.0,0.75
+Shashwat_AI_ML_Project_Roadmap.pdf,Which Ragas metrics are named for the DocuMind golden set?,factual,True,True,0.5,0.8333333333333334
+Shashwat_AI_ML_Project_Roadmap.pdf,What two changes does the roadmap say will move the needle fastest?,multi_context,True,True,1.0,0.42857142857142855
+Shashwat_AI_ML_Project_Roadmap.pdf,Which FastAPI endpoints are proposed for DocuMind?,factual,True,True,1.0,0.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What chunking approaches does DocuMind suggest experimenting with?,factual,True,True,1.0,0.75
+Shashwat_AI_ML_Project_Roadmap.pdf,What is each DocuMind pipeline stage wrapped in for tracing?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Which existing ML projects prove the candidate's modeling ability?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,How large should the DocuMind golden set be?,factual,True,True,1.0,0.5
+Shashwat_AI_ML_Project_Roadmap.pdf,What stretch-goal technique is suggested for vague user questions?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What does multi-tenant document isolation prevent?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Why does the roadmap suggest hybrid search?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What tool is suggested to load-test the DocuMind API?,factual,True,True,0.5,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What nodes are in the Project 2 LangGraph agent?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What observability technologies are proposed for Project 2?,multi_context,True,True,0.3333333333333333,0.5
+Shashwat_AI_ML_Project_Roadmap.pdf,What protocol does Project 2 use for tool calling instead of hardcoded LangChain tools?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What does the Critic node do in the AgentOps graph?,factual,True,True,1.0,0.3333333333333333
+Shashwat_AI_ML_Project_Roadmap.pdf,What long-term memory stretch goal is proposed for AgentOps?,factual,True,True,1.0,0.8571428571428571
+Shashwat_AI_ML_Project_Roadmap.pdf,What is model routing in Project 2?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What guardrail addresses runaway agent loops?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Which tools provide metrics and dashboards in Project 3?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What tool does Project 3 use for drift detection?,factual,True,True,1.0,0.3333333333333333
+Shashwat_AI_ML_Project_Roadmap.pdf,What is Project 4 called and what does it do?,multi_context,True,True,1.0,0.2857142857142857
+Shashwat_AI_ML_Project_Roadmap.pdf,Which metrics does PromptBench score?,factual,True,True,0.5,0.75
+Shashwat_AI_ML_Project_Roadmap.pdf,What format defines a PromptBench test case?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What stretch goal validates the LLM-as-judge itself?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What does SupportGraph do when the model is unsure?,factual,True,True,1.0,0.6666666666666666
+Shashwat_AI_ML_Project_Roadmap.pdf,What privacy step runs on incoming tickets in SupportGraph?,factual,True,True,1.0,0.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Give examples of MCP tools Project 6 might expose.,factual,True,True,1.0,0.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Which three projects does the roadmap recommend building first?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,Who introduced the Model Context Protocol?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What is semantic caching?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What lightweight fine-tuning techniques are mentioned?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What vector index choices are named for RAG at scale?,factual,True,True,1.0,0.75
+Shashwat_AI_ML_Project_Roadmap.pdf,Which practice problem lists does the DSA plan recommend?,factual,True,True,1.0,0.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What book is recommended for ML system design?,factual,True,True,1.0,1.0
+Shashwat_AI_ML_Project_Roadmap.pdf,What is planned for weeks 1 and 2 of the roadmap?,multi_context,True,True,1.0,0.875
+,What is the population of Mars according to this document?,unanswerable,False,False,0.0,
+,What monthly salary does this roadmap guarantee?,unanswerable,False,False,0.0,
+,"Which cloud provider (AWS, GCP, or Azure) does the roadmap require?",unanswerable,False,False,0.0,
+,How many GitHub stars does the DocuMind repository have?,unanswerable,False,False,0.0,

@@ -1,0 +1,9 @@
+metric,value
+documents,1
+chunks,73
+questions,43
+answerable,39
+page_recall@5,1.0
+mrr,0.9444444444444445
+coverage,0.7593101343101344
+coverage>=0.5,0.7948717948717948
