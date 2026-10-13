@@ -50,10 +50,8 @@ def _get_client() -> QdrantClient:
     return QdrantClient(path=settings.qdrant_path)
 
 
-@lru_cache(maxsize=1)
-def get_store() -> QdrantVectorStore:
-    """Vector store singleton; creates the collection on first use."""
-    client = _get_client()
+def _build_store(client: QdrantClient) -> QdrantVectorStore:
+    """Wrap a client as a vector store, creating the collection if absent."""
     embeddings = get_embeddings()
     name = settings.qdrant_collection
     if not client.collection_exists(name):
@@ -62,6 +60,24 @@ def get_store() -> QdrantVectorStore:
             name, vectors_config=VectorParams(size=dim, distance=Distance.COSINE)
         )
     return QdrantVectorStore(client=client, collection_name=name, embedding=embeddings)
+
+
+@lru_cache(maxsize=1)
+def get_store() -> QdrantVectorStore:
+    """Vector store singleton; creates the collection on first use."""
+    return _build_store(_get_client())
+
+
+def build_memory_store(chunks: list[Document]) -> QdrantVectorStore:
+    """A throwaway in-memory store holding ``chunks`` — for eval and tests.
+
+    Uses the same embedder, collection config and distance as the real store,
+    so it exercises the production pipeline without touching disk (and so the
+    evaluation can never drift from what the service actually does).
+    """
+    store = _build_store(QdrantClient(location=":memory:"))
+    store.add_documents(chunks)
+    return store
 
 
 def index_chunks(chunks: list[Document]) -> int:
@@ -82,7 +98,9 @@ def _diversify(scored: list[ScoredChunk]) -> list[ScoredChunk]:
     out, counts = [], {}
     cap = settings.max_chunks_per_page
     for r in scored:
-        key = r.document.metadata.get("page", "x")
+        # Key on (source, page) so the same page number in two different
+        # documents is not treated as one page (multi-document correctness).
+        key = (r.document.metadata.get("source"), r.document.metadata.get("page", "x"))
         if cap is not None and counts.get(key, 0) >= cap:
             continue
         out.append(r)
@@ -92,9 +110,13 @@ def _diversify(scored: list[ScoredChunk]) -> list[ScoredChunk]:
     return out
 
 
-def retrieve(query: str) -> list[ScoredChunk]:
-    """Full retrieval stage for one query -> final ranked chunks."""
-    store = get_store()
+def retrieve(query: str, store: QdrantVectorStore | None = None) -> list[ScoredChunk]:
+    """Full retrieval stage for one query -> final ranked chunks.
+
+    ``store`` defaults to the service singleton; the eval harness and tests pass
+    an in-memory store so they run this exact code path against their own index.
+    """
+    store = store or get_store()
     raw = store.similarity_search_with_score(query, k=settings.retrieval_top_k)
     candidates = [ScoredChunk(document=d, retrieval_score=float(s)) for d, s in raw]
     if not candidates:
