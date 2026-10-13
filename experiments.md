@@ -24,6 +24,38 @@ Qdrant index per ingestion configuration, and cosine distance.
 
 ## Timeline of changes
 
+### 2026-10-14 — Query-aware fusion: closed 2 of the 3 residual misses
+
+Hybrid augmentation (above) put the exact-match chunks *in the candidate pool*,
+but a diagnostic showed the cross-encoder still ranked two of them at ~rank 7 —
+just outside the top-5 after page diversification. The correct chunks were
+present and strongly favoured by BM25; only the final ordering was wrong. So
+instead of a bigger `reranker_top_k` (which would game Recall@5), I added a
+**final-stage query-aware fusion**: standardize the reranker and BM25 scores per
+query and rank on `reranker_z + α · bm25_z` (D-17). Swept α on the 4-doc corpus:
+
+| α | Recall@5 | MRR | coverage | cov ≥ 0.5 | misses |
+|---:|---:|---:|---:|---:|---:|
+| 0.00 (pure reranker) | 0.949 | 0.890 | 0.744 | 0.763 | 3 |
+| 0.10 | 0.966 | 0.896 | 0.744 | 0.763 | 2 |
+| **0.15 (adopted)** | **0.983** | **0.897** | **0.754** | **0.780** | **1** |
+| 0.30 | 0.983 | 0.889 | 0.753 | 0.780 | 1 |
+| 0.50 | 0.983 | 0.857 | 0.767 | 0.797 | 1 |
+| 1.00 | 0.949 | 0.781 | 0.754 | 0.780 | 3 |
+
+**α = 0.15 is the knee.** It recovers both closeable misses (the Transformer
+*Adam optimizer* page and the RAG *FAISS/HNSW* page), lifts MRR *above* the
+pure-reranker baseline (0.890 → 0.897), raises coverage, and introduces **no new
+misses**. The curve also shows the failure mode of over-weighting lexical signal:
+past α ≈ 0.5 MRR erodes, and at α = 1.0 two *new* exact-match questions (BERT
+acronym, LoRA/QLoRA) get displaced — recall falls back to 0.949. A light touch
+wins. **The one surviving miss is deliberate:** the roadmap *"Which Ragas metrics
+… for the golden set?"* question. The full four-metric list is enumerated only on
+page 1, but the query says "golden set" and page 2 *is* the golden-set paragraph
+(and genuinely names Ragas + faithfulness + context precision). The reranker
+confidently returns page 2 — a defensible answer — so relabelling page 1 → 2 to
+turn the metric green would be gaming, not a fix. Left standing as real signal.
+
 ### 2026-10-14 — Hybrid retrieval: measured, tuned, adopted
 
 Ran the hybrid-search experiment that D-15 set up, on the 4-document corpus.

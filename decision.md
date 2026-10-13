@@ -246,6 +246,33 @@ and invalidated on ingest; the eval harness passes the corpus in directly.
 page, and the roadmap "Ragas" question — candidates for the next lever
 (query-aware weighting, or an answer-term accuracy metric).
 
+### D-17 — Query-aware fusion at the final ranking (α = 0.15)
+**Decision.** After the cross-encoder scores the candidate pool, rank not on the
+raw reranker score but on a **query-normalized blend** `reranker_z + α · bm25_z`
+with **α = 0.15** (config `fusion_alpha`; 0.0 disables, only active on the hybrid
+path). **Why.** D-16's augmentation put the exact-match chunks *into* the pool,
+but a per-query diagnostic showed the reranker still placed two of them at ~rank 7
+— just outside the diversified top-5 — even though BM25 ranked them 3rd and 8th.
+The signal was present; only the final ordering was wrong. Standardizing both
+signals per query and adding a light lexical term lets a chunk *both* models like
+rise, without either dominating. **Outcome (4-doc corpus).** Recall@5 0.949 →
+**0.983**, MRR 0.890 → **0.897**, coverage 0.744 → **0.754**, misses 3 → **1**,
+with **no regressions** — recovering the Transformer *Adam optimizer* page and the
+RAG *FAISS/HNSW* page. α was swept {0.1…1.0}: 0.15 is the knee, and α ≥ 0.5 erodes
+MRR while α = 1.0 displaces two other exact-match answers (recall back to 0.949),
+confirming this is a light-touch nudge, not a lexical takeover. **Rejected —
+raising `reranker_top_k` past 5:** it would lift Recall@5 by handing the LLM more
+chunks, but that games the metric (we *measure* at 5) and dilutes precision rather
+than fixing the ordering. **Rejected — relabelling the last miss:** the roadmap
+"Which Ragas metrics … for the golden set?" question still misses because the
+query points at page 2 (the golden-set paragraph, which genuinely names Ragas
+metrics) while the full four-metric enumeration is on page 1. Page 2 is a
+defensible answer, so moving the ground-truth label to make it pass would be
+gaming; left standing. **Distinct from the D-16 rejection of RRF:** that was
+rank-fusion used for *candidate selection* (it evicted dense chunks before
+rerank); this is score-fusion at the *final* stage over a pool that already keeps
+every dense chunk, so nothing is evicted.
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)

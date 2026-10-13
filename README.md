@@ -14,19 +14,27 @@ Transformer, BERT and RAG papers) with a 63-question hand-grounded golden set.
 
 | Metric | single-doc (39 Q) | 4-doc corpus (59 Q) | What it means |
 |---|---:|---:|---|
-| Page Recall@5 | 1.000 | **0.949** | the right page is in the top-5 retrieved chunks |
-| MRR | 0.944 | **0.890** | how highly the right page is ranked |
-| Content coverage | 0.759 | **0.744** | fraction of ground-truth answer terms delivered |
+| Page Recall@5 | 1.000 | **0.983** | the right page is in the top-5 retrieved chunks |
+| MRR | 0.944 | **0.897** | how highly the right page is ranked |
+| Content coverage | 0.759 | **0.754** | fraction of ground-truth answer terms delivered |
 | Citation leaks | 0 / 43 | — | the LLM never leaks source labels into prose |
 | Unanswerable refused | 4 / 4 | — | it refuses everything it can't ground |
 
-The multi-doc numbers are after adopting **hybrid retrieval**. Moving to a
+The multi-doc numbers come from two measured retrieval upgrades. Moving to a
 4-document corpus surfaced exact-match misses (rare tokens like *Ragas*, *FAISS*,
-*HNSW*) that dense retrieval dilutes; augmenting the dense pool with BM25's top
-lexical matches recovered them (dense → hybrid: Recall@5 +0.017, MRR +0.038,
-coverage +0.032, no regressions — D-16). A naive Reciprocal-Rank Fusion variant
-was tried first and was a wash; the comparison is in
-`experiment/hybrid_vs_dense_results.csv`.
+*HNSW*) that dense retrieval dilutes:
+
+1. **Hybrid retrieval (D-16)** — augmenting the dense pool with BM25's top lexical
+   matches put those chunks back into contention (Recall@5 0.932 → 0.949). A naive
+   Reciprocal-Rank Fusion variant was tried first and was a wash (it evicted
+   correct dense chunks before reranking); the comparison is in
+   `experiment/hybrid_vs_dense_results.csv`.
+2. **Query-aware fusion (D-17)** — a diagnostic showed the reranker still buried
+   two recovered chunks at ~rank 7, so the final ranking blends the reranker and
+   BM25 scores (`reranker_z + 0.15·bm25_z`). Swept to the knee: Recall@5 0.949 →
+   **0.983**, MRR +0.007, no regressions. Of the 3 residual misses, 2 are closed;
+   the 1 remaining is a genuinely ambiguous grounding, left standing rather than
+   relabelled.
 
 Full ablations (chunk size, top-k, reranker on/off, metadata enrichment, hybrid
 search, prompt A/B) are in [`experiments.md`](experiments.md); the rationale and
@@ -37,7 +45,7 @@ rejected alternatives for each choice are in [`decision.md`](decision.md).
 ```
 PDF ─► load (PyPDF) ─► chunk 500/150 + metadata enrichment ─► embed (MiniLM-L6-v2, cosine)
                                                                       │
-query ─► embed ─► dense top-20 ∪ BM25 top-20 ─► cross-encoder rerank ─► 1 chunk/page, top-5 ─► LLM (Prompt B)
+query ─► embed ─► dense top-20 ∪ BM25 top-20 ─► cross-encoder rerank ─► fuse (rerank+BM25) ─► 1 chunk/page, top-5 ─► LLM (Prompt B)
                                                                       │
                                                         grounded answer + Python-owned citations
 ```
@@ -50,6 +58,9 @@ Key design decisions:
   matches and the reranker decides, recovering exact-match hits on a
   multi-document corpus (D-16).
 - **Cross-encoder reranking** over a wide dense pool — lifts MRR at every top-k (D-4).
+- **Query-aware fusion** — the final ranking blends the reranker and BM25 scores
+  (`reranker_z + 0.15·bm25_z`) so a chunk both signals agree on reaches the
+  top-5; swept to the knee, closing exact-match misses the reranker alone buried (D-17).
 - **Python owns citations** — the model is instructed *not* to cite; citations are
   built from chunk metadata and a deterministic strip removes any the small model
   leaks anyway (D-9, D-12).
@@ -155,9 +166,12 @@ can never drift from what the service actually does, and it keys ground truth on
 The retrieval/generation pipeline is **locked** and served, and now evaluated on a
 multi-document corpus. Logged next steps:
 
-- Close the 3 residual misses (RAG FAISS/HNSW page, Transformer optimizer page,
-  roadmap *Ragas*) — e.g. query-aware fusion weighting, or an answer-term
-  **accuracy** metric (not just coverage) to catch wrong-list answers.
+- ✅ Closed 2 of the 3 residual misses with query-aware fusion (D-17). The 1
+  remaining (roadmap *Ragas*) is a genuinely ambiguous grounding — the query
+  points at the golden-set page, the full metric list is on another — left
+  standing rather than relabelled.
+- Add an answer-term **accuracy** metric (not just coverage) to catch wrong-list
+  answers.
 - Wire **Langfuse** tracing for per-stage latency/cost.
 - Add **Ragas** context-precision/recall in CI against the golden set.
 
