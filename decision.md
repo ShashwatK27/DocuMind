@@ -221,6 +221,31 @@ retriever refactor). **Rejected:** LLM-generated questions for the new docs
 the page text); committing the PDFs (redistribution of third-party papers — a
 fetch script is cleaner and keeps the repo small).
 
+### D-16 — Adopt hybrid retrieval (BM25-augmented dense); naive RRF rejected
+**Decision.** Turn hybrid retrieval **on by default** in the service, implemented
+as **candidate augmentation**: take the dense top-k, add BM25's top-k lexical
+matches that aren't already present, and let the existing cross-encoder rerank
+the union. **Why.** Measured on the 4-document corpus (D-15's open experiment),
+this beats dense on every axis with no regressions — Recall@5 0.932 → **0.949**,
+MRR 0.852 → **0.890**, coverage 0.712 → **0.744** — and recovers exact-match
+misses (e.g. the roadmap's "vector index … for RAG at scale", now rank 1) without
+displacing any previously-correct answer. **This reverses D-11 for the
+multi-document regime** (D-11 rejected hybrid on a single doc, where there were no
+lexical competitors; that rejection still stands for single-doc corpora).
+**Rejected — naive Reciprocal-Rank Fusion:** the textbook RRF variant was tried
+first and was a *wash* (Recall@5 +0.000, coverage −0.030, cov≥0.5 −0.085). Because
+RRF re-truncates the fused list to k, BM25's lexical hits evicted correct dense
+chunks from the candidate pool *before the reranker could see them* — it recovered
+2 misses but introduced 2 new ones. Candidate augmentation keeps every dense
+chunk and only *adds* options, so a strong reranker can only benefit. Both results
+are kept in `experiment/hybrid_vs_dense_results.csv`. **Serving note.** BM25 needs
+the chunk texts, which Qdrant doesn't return at query time, so the service keeps a
+process-wide BM25 index rebuilt by scrolling the collection (survives restarts)
+and invalidated on ingest; the eval harness passes the corpus in directly.
+**Still missed (3):** the RAG-paper FAISS/HNSW page, the Transformer optimizer
+page, and the roadmap "Ragas" question — candidates for the next lever
+(query-aware weighting, or an answer-term accuracy metric).
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)

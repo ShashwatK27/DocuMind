@@ -24,6 +24,28 @@ Qdrant index per ingestion configuration, and cosine distance.
 
 ## Timeline of changes
 
+### 2026-10-14 — Hybrid retrieval: measured, tuned, adopted
+
+Ran the hybrid-search experiment that D-15 set up, on the 4-document corpus.
+
+| metric | dense | naive RRF | **augmented (shipped)** |
+|---|---:|---:|---:|
+| Page Recall@5 | 0.932 | 0.932 | **0.949** |
+| MRR | 0.852 | 0.845 | **0.890** |
+| Content coverage | 0.712 | 0.681 | **0.744** |
+| coverage ≥ 0.5 | 0.763 | 0.678 | **0.763** |
+
+Two hybrid designs, one clear winner. **Naive Reciprocal-Rank Fusion** was a wash:
+it recovered the two predicted exact-match misses but, because RRF re-truncates to
+k, evicted two previously-correct dense chunks from the candidate pool before the
+reranker saw them — net zero on recall, worse on coverage. **Candidate
+augmentation** (dense top-k ∪ BM25 top-k, reranked) keeps every dense chunk and
+only adds BM25's lexical hits, so the cross-encoder can only benefit: it beats
+dense on every axis with no regressions and is now the default (D-16). Verified
+end-to-end in the service, including BM25 rebuilt from a Qdrant scroll after a
+simulated restart. Three misses remain (RAG FAISS/HNSW page, Transformer
+optimizer page, roadmap "Ragas") — the next lever.
+
 ### 2026-10-13 — Shipped the service and a multi-document corpus
 
 Two steps, both toward turning the locked pipeline into a portfolio-grade system

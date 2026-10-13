@@ -14,16 +14,19 @@ Transformer, BERT and RAG papers) with a 63-question hand-grounded golden set.
 
 | Metric | single-doc (39 Q) | 4-doc corpus (59 Q) | What it means |
 |---|---:|---:|---|
-| Page Recall@5 | 1.000 | **0.932** | the right page is in the top-5 retrieved chunks |
-| MRR | 0.944 | **0.852** | how highly the right page is ranked |
-| Content coverage | 0.759 | **0.712** | fraction of ground-truth answer terms delivered |
+| Page Recall@5 | 1.000 | **0.949** | the right page is in the top-5 retrieved chunks |
+| MRR | 0.944 | **0.890** | how highly the right page is ranked |
+| Content coverage | 0.759 | **0.744** | fraction of ground-truth answer terms delivered |
 | Citation leaks | 0 / 43 | — | the LLM never leaks source labels into prose |
 | Unanswerable refused | 4 / 4 | — | it refuses everything it can't ground |
 
-The drop from the single-doc numbers is the useful part: all four remaining
-Recall@5 misses are **exact-match cases** (rare tokens like *Ragas*, *FAISS*,
-*HNSW*) where dense retrieval is diluted by a semantically-similar document —
-concrete motivation for the hybrid search on the roadmap below.
+The multi-doc numbers are after adopting **hybrid retrieval**. Moving to a
+4-document corpus surfaced exact-match misses (rare tokens like *Ragas*, *FAISS*,
+*HNSW*) that dense retrieval dilutes; augmenting the dense pool with BM25's top
+lexical matches recovered them (dense → hybrid: Recall@5 +0.017, MRR +0.038,
+coverage +0.032, no regressions — D-16). A naive Reciprocal-Rank Fusion variant
+was tried first and was a wash; the comparison is in
+`experiment/hybrid_vs_dense_results.csv`.
 
 Full ablations (chunk size, top-k, reranker on/off, metadata enrichment, hybrid
 search, prompt A/B) are in [`experiments.md`](experiments.md); the rationale and
@@ -34,7 +37,7 @@ rejected alternatives for each choice are in [`decision.md`](decision.md).
 ```
 PDF ─► load (PyPDF) ─► chunk 500/150 + metadata enrichment ─► embed (MiniLM-L6-v2, cosine)
                                                                       │
-query ─► embed ─► dense top-20 ─► cross-encoder rerank ─► 1 chunk/page, top-5 ─► LLM (Prompt B)
+query ─► embed ─► dense top-20 ∪ BM25 top-20 ─► cross-encoder rerank ─► 1 chunk/page, top-5 ─► LLM (Prompt B)
                                                                       │
                                                         grounded answer + Python-owned citations
 ```
@@ -43,6 +46,9 @@ Key design decisions:
 
 - **Metadata enrichment** — each chunk is prefixed with `Source | Page | Section`;
   measured to raise content coverage at overlap 150 (D-11).
+- **Hybrid retrieval** — the dense pool is augmented with BM25's top lexical
+  matches and the reranker decides, recovering exact-match hits on a
+  multi-document corpus (D-16).
 - **Cross-encoder reranking** over a wide dense pool — lifts MRR at every top-k (D-4).
 - **Python owns citations** — the model is instructed *not* to cite; citations are
   built from chunk metadata and a deterministic strip removes any the small model
@@ -149,13 +155,11 @@ can never drift from what the service actually does, and it keys ground truth on
 The retrieval/generation pipeline is **locked** and served, and now evaluated on a
 multi-document corpus. Logged next steps:
 
-- **Hybrid BM25 + dense search** — the multi-doc misses are exact-match cases
-  (*Ragas*, *FAISS*, *HNSW*) that hybrid search is designed to fix (D-15). This is
-  the next experiment; it was rejected on the single doc (D-11) but now has
-  evidence.
+- Close the 3 residual misses (RAG FAISS/HNSW page, Transformer optimizer page,
+  roadmap *Ragas*) — e.g. query-aware fusion weighting, or an answer-term
+  **accuracy** metric (not just coverage) to catch wrong-list answers.
 - Wire **Langfuse** tracing for per-stage latency/cost.
 - Add **Ragas** context-precision/recall in CI against the golden set.
-- Answer-term **accuracy** metric (not just coverage) to catch wrong-list answers.
 
 ## Tech stack
 
