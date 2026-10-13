@@ -6,16 +6,24 @@ augmented generation (RAG) service whose every hyperparameter was **chosen from
 measured experiments**, not guessed. The experiment log (`experiments.md`) and
 the decision log (`decision.md`) are first-class parts of this repo.
 
-## Results (selected configuration, 43-question evaluation set)
+## Results
 
-| Metric | Value | What it means |
-|---|---:|---|
-| Page Recall@5 | **1.000** | the right page is always in the top-5 retrieved chunks |
-| MRR | **0.944** | the right page is almost always ranked first |
-| Content coverage | **0.759** | fraction of ground-truth answer terms delivered in context |
-| Citation leaks | **0 / 43** | the LLM never leaks source labels into prose |
-| Refusals on answerable Q | **0 / 39** | it answers everything it can |
-| Unanswerable refused | **4 / 4** | it refuses everything it can't ground |
+The pipeline was tuned on a single document (where page-recall saturated at 1.000)
+and is now evaluated on a **four-document corpus** (the roadmap plus the
+Transformer, BERT and RAG papers) with a 63-question hand-grounded golden set.
+
+| Metric | single-doc (39 Q) | 4-doc corpus (59 Q) | What it means |
+|---|---:|---:|---|
+| Page Recall@5 | 1.000 | **0.932** | the right page is in the top-5 retrieved chunks |
+| MRR | 0.944 | **0.852** | how highly the right page is ranked |
+| Content coverage | 0.759 | **0.712** | fraction of ground-truth answer terms delivered |
+| Citation leaks | 0 / 43 | — | the LLM never leaks source labels into prose |
+| Unanswerable refused | 4 / 4 | — | it refuses everything it can't ground |
+
+The drop from the single-doc numbers is the useful part: all four remaining
+Recall@5 misses are **exact-match cases** (rare tokens like *Ragas*, *FAISS*,
+*HNSW*) where dense retrieval is diluted by a semantically-similar document —
+concrete motivation for the hybrid search on the roadmap below.
 
 Full ablations (chunk size, top-k, reranker on/off, metadata enrichment, hybrid
 search, prompt A/B) are in [`experiments.md`](experiments.md); the rationale and
@@ -112,18 +120,39 @@ app/            FastAPI service (the locked pipeline)
   retrieval/      Qdrant store, dense search, rerank, diversify
   generation/     Prompt B, Ollama, citation strip
   main.py         HTTP endpoints
+eval/           source-aware evaluation harness (python -m eval)
+  golden_set.py   63 hand-grounded questions over the 4-document corpus
+  harness.py      loads every PDF, runs the real app pipeline, scores it
+scripts/        fetch_corpus.py — download the arXiv evaluation corpus
 notebooks/      rag_1.ipynb — the experiments that selected the config
 experiment/     measured results (CSV/JSON) behind every decision
 experiments.md  the experiment log
 decision.md     what was decided, why, and what was rejected
 ```
 
+## Evaluation
+
+The corpus is the roadmap PDF (tracked) plus three public arXiv papers (fetched,
+not committed). Download them and run the harness:
+
+```bash
+python scripts/fetch_corpus.py   # -> data/documents/*.pdf
+python -m eval                   # Recall@5, MRR, coverage over the golden set
+```
+
+The harness indexes every PDF through the exact `app` pipeline, so its numbers
+can never drift from what the service actually does, and it keys ground truth on
+`(source, page)` so a multi-document corpus is scored correctly.
+
 ## Status & roadmap
 
-The retrieval/generation pipeline is **locked** and served. Logged next steps:
+The retrieval/generation pipeline is **locked** and served, and now evaluated on a
+multi-document corpus. Logged next steps:
 
-- Evaluate on a **multi-document corpus** (likely revives hybrid search, which
-  lost on this single-doc set — D-11).
+- **Hybrid BM25 + dense search** — the multi-doc misses are exact-match cases
+  (*Ragas*, *FAISS*, *HNSW*) that hybrid search is designed to fix (D-15). This is
+  the next experiment; it was rejected on the single doc (D-11) but now has
+  evidence.
 - Wire **Langfuse** tracing for per-stage latency/cost.
 - Add **Ragas** context-precision/recall in CI against the golden set.
 - Answer-term **accuracy** metric (not just coverage) to catch wrong-list answers.

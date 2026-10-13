@@ -191,12 +191,44 @@ model pull; host Ollama keeps it on the user's GPU and matches the local-first
 assumption); re-implementing the pipeline rather than lifting the validated
 `fe_lib`/notebook logic (would risk drift from the measured results).
 
+### D-15 — Evaluate on a multi-document corpus; hybrid search now has evidence
+**Decision.** Grow the evaluation universe from the single roadmap PDF to a
+**four-document corpus** — the roadmap plus three public arXiv papers (Transformer,
+BERT, RAG), fetched reproducibly by `scripts/fetch_corpus.py` and *not* committed
+(third-party content; gitignored, roadmap kept) — and hand-ground **20 new
+questions** across the papers (golden set 43 → 63, 59 answerable). Run everything
+through the committed `eval/` harness, which reuses the real `app` pipeline.
+**Why.** A single document made page-recall saturate at 1.000, which the n=43
+work already flagged as hiding signal; a realistic system is multi-document, and
+the roadmap's own thesis is to ship one. **Outcome.** Recall@5 fell 1.000 → 0.932
+and MRR 0.944 → 0.852 — not a regression but the metric finally having room to
+move. The **4 genuine misses are all exact-match cases** (*Ragas*, *Adam*,
+*FAISS*, *HNSW*): a rare, decisive token sits on the correct page, but dense
+cosine similarity ranks a semantically-similar passage (often from the RAG paper)
+above it. **This overturns the single-doc reading of D-11.** Hybrid BM25+dense
+was rejected there because, on one document with no lexical competitors, it only
+lowered coverage. On a multi-document corpus the exact-match failures it is
+designed to fix actually occur — so hybrid search (and/or metadata/source
+filtering) is now the **next experiment**, to be measured on this corpus before
+adopting. **Also decided:** credit a Recall@k hit on *any* page that genuinely
+states the answer — three new questions were re-grounded to two pages each after
+inspection (e.g. BERT `[CLS]`/`[SEP]` on pages 3–4), which is correct recall
+practice, not metric-gaming; the four exact-match misses were left standing as
+real signal. **Correctness fix shipped alongside:** page diversification now keys
+on `(source, page)` so two documents' page 1 are not merged (committed with the
+retriever refactor). **Rejected:** LLM-generated questions for the new docs
+(unverified ground truth — the questions were hand-grounded and checked against
+the page text); committing the PDFs (redistribution of third-party papers — a
+fetch script is cleaner and keeps the repo small).
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)
 
-- The 10-question golden set and the single roadmap PDF are the evaluation universe
-  for now; metrics are directional given n=9 answerable.
+- The evaluation universe is the 63-question golden set over a four-document corpus
+  (roadmap + three arXiv papers); 59 answerable, so metrics now move in ~1/59 steps
+  (D-15). The notebook still runs the older single-doc harness; `eval/` is the
+  source of truth going forward.
 - Local-first: generation stays on Ollama `llama3.2:3b`; no hosted API calls.
 - Python owns all citation/metadata; the LLM only drafts prose (notebook invariant,
   carried into `app/`).

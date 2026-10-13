@@ -24,6 +24,39 @@ Qdrant index per ingestion configuration, and cosine distance.
 
 ## Timeline of changes
 
+### 2026-10-13 — Shipped the service and a multi-document corpus
+
+Two steps, both toward turning the locked pipeline into a portfolio-grade system
+(see `decision.md` D-14, D-15).
+
+**Served the pipeline.** Filled `app/` with a FastAPI service that encodes the
+selected configuration, with `/ingest`, `/query`, `/feedback`, `/health` and a
+demo UI, plus Docker/compose and a README that leads with the results. Added a
+committed, source-aware evaluation harness (`eval/`, `python -m eval`) that runs
+the *real* `app` pipeline so the numbers can never drift from the service; it
+reproduced the notebook's n=43 figures exactly (Recall@5 1.000, MRR 0.944).
+
+**Added a 4-document corpus.** Fetched three public arXiv papers (Transformer,
+BERT, RAG) via `scripts/fetch_corpus.py` and hand-grounded 20 new questions
+(golden set now 63; 59 answerable). The index grew 73 → 569 chunks. Results on
+the multi-document corpus:
+
+| metric | single-doc (n=39) | 4-doc (n=59) |
+|---|---:|---:|
+| Page Recall@5 | 1.000 | **0.932** |
+| MRR | 0.944 | **0.852** |
+| Content coverage | 0.759 | **0.712** |
+| coverage ≥ 0.5 | 0.795 | **0.763** |
+
+The drop is the point: the saturated single-doc metric hid everything. All **4
+genuine Recall@5 misses are exact-match cases** — the queries hinge on rare
+tokens (*Ragas*, *Adam*, *FAISS*, *HNSW*) that dense retrieval dilutes because a
+semantically-similar document outranks the correct page. Two are cross-document
+(roadmap questions swamped by the RAG paper); two are within-document (the one
+page carrying the exact term is outranked by prose about the same topic). This is
+the first concrete evidence that **hybrid search** — rejected on the single doc
+(D-11) — should help, and it is the next experiment to run (D-15).
+
 ### 2026-10-10 — Golden set expanded 10 → 43 questions
 
 Grounded every question in the roadmap PDF across all 10 pages; 39 answerable + 4
