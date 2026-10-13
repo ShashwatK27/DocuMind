@@ -1,14 +1,14 @@
 {
-  "average_retrieval_latency_ms": 21.396590000040305,
-  "average_reranking_latency_ms": 457.9422599999816,
-  "average_generation_latency_ms": 806.8336799999088,
-  "average_total_latency_ms": 1286.1725299999307,
-  "p50_retrieval_latency_ms": 20.447599999897648,
-  "p95_retrieval_latency_ms": 26.5603850005391,
-  "p50_reranking_latency_ms": 451.6471000006277,
-  "p95_reranking_latency_ms": 515.2842249995045,
-  "p50_generation_latency_ms": 730.8987500000512,
-  "p95_generation_latency_ms": 1461.7506149998003,
-  "p50_total_latency_ms": 1177.18215000059,
-  "p95_total_latency_ms": 1985.844999999335
+  "average_retrieval_latency_ms": 20.555999999064518,
+  "average_reranking_latency_ms": 600.1067418648406,
+  "average_generation_latency_ms": 1090.050851160709,
+  "average_total_latency_ms": 1710.7135930246143,
+  "p50_retrieval_latency_ms": 18.386199983069673,
+  "p95_retrieval_latency_ms": 29.79542000684887,
+  "p50_reranking_latency_ms": 599.2909999913536,
+  "p95_reranking_latency_ms": 647.9522100155009,
+  "p50_generation_latency_ms": 1007.2466999990866,
+  "p95_generation_latency_ms": 1797.4660800100537,
+  "p50_total_latency_ms": 1639.1065000207163,
+  "p95_total_latency_ms": 2454.383890007739
 }

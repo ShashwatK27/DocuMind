@@ -1,19 +1,67 @@
 question_number,question,answer,source_pages,retrieval_ms,rerank_ms,generation_ms,total_ms,failure_categories,preliminary_grounding_check
-1,What career direction does the roadmap recommend?,Applied AI/ML Engineering.,"[1, 10, 7, 2, 9]",17.86080000056245,409.0969999997469,620.9111999996821,1047.8689999999915,None,review: low lexical overlap; manual inspection required
-2,"What technologies are listed for Project 1, DocuMind?","FastAPI, Ragas, DeepEval, SQLite/Postgres, Streamlit, Ollama.","[1, 10, 8, 4, 7]",22.40429999983462,443.20470000093337,840.8863000004203,1306.4953000011883,None,review: low lexical overlap; manual inspection required
-3,What is the ingestion pipeline order for DocuMind?,I don't know based on the provided documents.,"[1, 10, 2, 6, 8]",20.03530000001774,435.7782999995834,525.6855999996333,981.4991999992344,Retrieval,review: low lexical overlap; manual inspection required
-4,What retrieval stages are proposed before the LLM in DocuMind?,"According to the provided context, the retrieval stages proposed before the LLM in DocuMind are:
+1,What career direction does the roadmap recommend?,Applied AI/ML Engineering.,"[1, 10, 7, 8, 2]",18.91700000851415,604.9443000229076,851.156999997329,1475.0183000287507,None,review: low lexical overlap; manual inspection required
+2,"What technologies are listed for Project 1, DocuMind?","For Project 1, DocuMind, the following technologies are listed:
 
-1. Similarity search
-2. A lightweight reranker (cross-encoder)","[1, 8, 6, 9, 2]",20.279099999243044,550.0302999989799,1187.827900001139,1758.1372999993619,None,pass: lexical overlap with supplied context
-5,Which Ragas metrics are named for the DocuMind golden set?,I don't know based on the provided documents.,"[2, 1, 4, 10, 5]",20.61610000055225,436.46520000038436,413.36969999974826,870.4510000006849,Generation,review: low lexical overlap; manual inspection required
-6,What nodes are in the Project 2 LangGraph agent?,"The Project 2 LangGraph agent consists of the following nodes:
+1. RAG API
+2. Automated Evaluation
+3. CI pipeline
+4. Python","[1, 10, 7, 8, 2]",24.44510001805611,601.9474000204355,1482.2850999771617,2108.6776000156533,None,pass: lexical overlap with supplied context
+3,What is the ingestion pipeline order for DocuMind?,The ingestion pipeline order for DocuMind is: PDF/text loader → chunking → embeddings → vector store.,"[1, 10, 2, 6, 8]",16.97019999846816,596.6896000027191,1107.0823000045493,1720.7421000057366,None,pass: lexical overlap with supplied context
+4,What retrieval stages are proposed before the LLM in DocuMind?,Similarity search + a lightweight reranker (cross-encoder) before passing context to the LLM.,"[1, 8, 9, 2, 5]",16.712900018319488,615.1469000033103,1007.2466999990866,1639.1065000207163,None,pass: lexical overlap with supplied context
+5,Which Ragas metrics are named for the DocuMind golden set?,I don't know based on the provided documents.,"[2, 1, 10, 5, 6]",18.386199983069673,633.5180999885779,810.3674000012688,1462.2716999729164,Generation,review: low lexical overlap; manual inspection required
+6,What two changes does the roadmap say will move the needle fastest?,"Standardize on Python for all AI portfolio work. Keep Node/Express as a ""can also do backend"" line on the resume.","[1, 10, 9, 2, 5]",17.371499998262152,604.7951999935322,1177.5389999966137,1799.705699988408,None,pass: lexical overlap with supplied context
+7,Which FastAPI endpoints are proposed for DocuMind?,"The FastAPI endpoints proposed for DocuMind are /ingest, /query, and /feedback.","[1, 2, 5, 10, 4]",18.830400018487126,593.8193000038154,1082.5469999981578,1695.1967000204604,None,pass: lexical overlap with supplied context
+8,What chunking approaches does DocuMind suggest experimenting with?,DocuMind suggests experimenting with fixed-size vs. semantic chunking.,"[1, 10, 2, 9, 4]",16.65769997634925,599.2909999913536,849.9344000010751,1465.883099968778,None,pass: lexical overlap with supplied context
+9,What is each DocuMind pipeline stage wrapped in for tracing?,Langfuse trace spans.,"[1, 10, 2, 6, 4]",16.222500009462237,605.8852999994997,562.0827999955509,1184.1906000045128,None,review: low lexical overlap; manual inspection required
+10,Which existing ML projects prove the candidate's modeling ability?,The Hotel Booking and CDSS projects.,"[1, 4, 7, 10, 8]",16.484799998579547,577.4620000156574,736.7669999948703,1330.7138000091072,None,pass: lexical overlap with supplied context
+11,How large should the DocuMind golden set be?,"According to the context, the DocuMind golden set should be 30-50 questions.","[2, 6, 1, 10, 9]",16.806200001155958,582.6736000017263,1052.5636999809649,1652.0434999838471,None,pass: lexical overlap with supplied context
+12,What stretch-goal technique is suggested for vague user questions?,Query rewriting or HyDE (Hypothetical Document Embeddings) is suggested for vague user questions.,"[2, 6, 4, 10, 8]",17.255100014153868,594.6442999993451,1049.026499997126,1660.925900010625,None,pass: lexical overlap with supplied context
+13,What does multi-tenant document isolation prevent?,Multi-tenant document isolation prevents User A's documents from leaking into User B's answers.,"[2, 3, 5, 1, 8]",18.58669999637641,585.1350000011735,977.5031000026502,1581.2248000002,None,pass: lexical overlap with supplied context
+14,Why does the roadmap suggest hybrid search?,"The roadmap suggests hybrid search because pure vector search misses exact-match terms like product codes or names, and this is a very common production fix.","[10, 2, 1, 9, 6]",51.61940000834875,649.5560000184923,1389.6326999820303,2090.8081000088714,None,pass: lexical overlap with supplied context
+15,What tool is suggested to load-test the DocuMind API?,Locust.,"[10, 2, 1, 4, 5]",22.849899978609756,610.5770000140183,513.9005999953952,1147.3274999880232,None,review: low lexical overlap; manual inspection required
+16,What nodes are in the Project 2 LangGraph agent?,"According to SOURCE 3 | Page 3, the nodes in the Project 2 LangGraph agent are:
 
 1. Planner
 2. Researcher
 3. Writer
-4. Critic","[2, 3, 7, 1, 10]",19.06769999914104,466.7105000007723,1010.368400000516,1496.1466000004293,None,pass: lexical overlap with supplied context
-7,What observability technologies are proposed for Project 2?,OpenTelemetry + Langfuse (per-node tracing).,"[1, 7, 2, 10, 6]",26.86130000074627,462.72309999949357,439.6574000002147,929.2418000004545,None,pass: lexical overlap with supplied context
-8,Why does the roadmap suggest hybrid search?,"The roadmap suggests hybrid search because it mentions ""Level It Up (Stretch Goals): Add hybrid search (BM25 keyword search + vector search, combined) — pure vector search misses exact-match terms like product codes or names, and this is a very common production fix"".","[10, 2, 1, 9, 8]",26.192600000285893,460.089500000322,1685.8691999987059,2172.151299999314,None,pass: lexical overlap with supplied context
-9,What is planned for weeks 1 and 2 of the roadmap?,"Project 1 (DocuMind RAG API) + DSA: Arrays, Hashing, Two Pointers, Binary Search.","[10, 7, 9, 6, 3]",21.06409999942116,472.81680000014603,886.5769999993063,1380.4578999988735,None,pass: lexical overlap with supplied context
-10,What is the population of Mars according to this document?,I don't know based on the provided documents.,"[1, 10, 2, 4, 3]",19.584600000598584,442.5071999994543,457.1840999997221,919.275899999775,None,pass: refused unsupported question
+4. Critic","[2, 6, 3, 10, 7]",20.113599981414154,608.2492000132333,1648.2288999832235,2276.591699977871,Citation,pass: lexical overlap with supplied context
+17,What observability technologies are proposed for Project 2?,OpenTelemetry and Langfuse are proposed for Project 2.,"[7, 6, 10, 1, 2]",19.37329999054782,611.189999995986,947.7733999956399,1578.3366999821737,None,pass: lexical overlap with supplied context
+18,What protocol does Project 2 use for tool calling instead of hardcoded LangChain tools?,MCP (Model Context Protocol) is used for tool calling instead of hardcoded LangChain tools.,"[2, 7, 8, 10, 1]",29.215099988505244,624.1855999978725,1120.7703000109177,1774.1709999972954,None,pass: lexical overlap with supplied context
+19,What does the Critic node do in the AgentOps graph?,I don't know based on the provided documents.,"[2, 3, 8, 10, 6]",29.859900008887053,630.0404000212438,831.3367999799084,1491.2371000100393,Generation,review: low lexical overlap; manual inspection required
+20,What long-term memory stretch goal is proposed for AgentOps?,"Store past research sessions in a vector store so the agent can recall ""we already looked into this last week"" instead of starting cold every time.","[3, 8, 10, 4, 6]",16.019800008507445,628.0444999865722,1395.6367000064347,2039.7010000015143,None,pass: lexical overlap with supplied context
+21,What is model routing in Project 2?,"In Project 2, model routing refers to the use of a small/cheap model for the Planner node and a stronger model only for the Writer node.","[3, 10, 6, 4, 2]",16.864499979419634,592.3187999869697,1376.0063000081573,1985.1895999745466,None,pass: lexical overlap with supplied context
+22,What guardrail addresses runaway agent loops?,A kill-switch node with a hard token/cost budget per session addresses runaway agent loops.,"[3, 2, 8, 10, 6]",15.403099998366088,584.900000016205,945.085499988636,1545.388600003207,None,pass: lexical overlap with supplied context
+23,Which tools provide metrics and dashboards in Project 3?,Prometheus and Grafana.,"[4, 7, 10, 2, 5]",46.049199998378754,673.3917999954429,740.3399999893736,1459.7809999831952,None,review: low lexical overlap; manual inspection required
+24,What tool does Project 3 use for drift detection?,Evidently AI.,"[4, 10, 7, 8, 2]",18.335900007514283,612.6062000112142,662.3401999822818,1293.2823000010103,None,review: low lexical overlap; manual inspection required
+25,What is Project 4 called and what does it do?,"Project 4 is called PromptBench — LLM Evaluation & Regression Testing. It is a framework that targets the ""evals"" gap, catching quality regressions whenever a prompt or model changes.","[4, 7, 8, 10, 1]",24.164200003724545,660.6987999984995,1780.2759000041988,2465.138900006423,None,pass: lexical overlap with supplied context
+26,Which metrics does PromptBench score?,"According to SOURCE 2 | Page 5, PromptBench scores model outputs on faithfulness, relevancy, and hallucination, using the metrics provided by Ragas + DeepEval.","[4, 5, 10, 2, 8]",19.07389998086728,598.1325000175275,1595.679799997015,2212.8861999954097,Citation,pass: lexical overlap with supplied context
+27,What format defines a PromptBench test case?,"A test-case format is defined as a YAML/JSON format consisting of a prompt template, input variables, and expected behavior/reference.","[5, 4, 8, 6, 2]",19.449999992502853,571.850500011351,1236.9810999953188,1828.2815999991726,None,pass: lexical overlap with supplied context
+28,What stretch goal validates the LLM-as-judge itself?,Validate the LLM-as-judge itself: have a human manually score a sample of the same responses and report agreement (inter-rater reliability) between the human and the judge model — this is the detail that separates a,"[5, 2, 4, 6, 8]",18.959100008942187,539.2535999999382,1799.3761000107042,2357.5888000195846,None,pass: lexical overlap with supplied context
+29,What does SupportGraph do when the model is unsure?,"When the model is unsure, SupportGraph escalates to a human.","[6, 1, 2, 7, 5]",17.999300005612895,536.7926000035368,930.1354000053834,1484.927300014533,None,pass: lexical overlap with supplied context
+30,What privacy step runs on incoming tickets in SupportGraph?,A simple PII-redaction step (regex or Presidio) runs on incoming tickets in SupportGraph.,"[6, 4, 10, 7, 5]",15.315700002247468,620.9973999939393,1104.9821999913547,1741.2952999875415,None,pass: lexical overlap with supplied context
+31,Give examples of MCP tools Project 6 might expose.,"The document suggests that Project 6, Personal MCP Server, might expose real tools/data such as:
+
+1. GitHub repos/issues
+2. A personal notes database
+3. The Hotel Booking model from Project 3","[7, 8, 10, 2, 3]",19.46239999961108,606.079499993939,1850.6263000017498,2476.1681999953,Retrieval,pass: lexical overlap with supplied context
+32,Which three projects does the roadmap recommend building first?,"Project 1, Project 2, and Project 4.","[7, 10, 1, 8, 2]",24.168899981305003,625.9293000039179,834.1886999842245,1484.2868999694474,Retrieval,pass: lexical overlap with supplied context
+33,Who introduced the Model Context Protocol?,Anthropic introduced the Model Context Protocol (MCP).,"[8, 7, 2, 10, 4]",15.480100002605468,569.0939999767579,838.7978000100702,1423.3718999894336,Retrieval,pass: lexical overlap with supplied context
+34,What is semantic caching?,"Semantic caching caches LLM responses based on the meaning of a query, not just an exact string match.","[8, 1, 9, 2, 5]",21.49819998885505,554.7408000275027,1006.314799975371,1582.5537999917287,None,pass: lexical overlap with supplied context
+35,What lightweight fine-tuning techniques are mentioned?,Lightweight fine-tuning techniques mentioned are LoRA (Low-Rank Adaptation) and QLoRA (Quantized Low-Rank Adaptation).,"[8, 1, 6, 2, 9]",17.3660000145901,584.3547999975272,1394.1904999956023,1995.9113000077195,None,pass: lexical overlap with supplied context
+36,What vector index choices are named for RAG at scale?,HNSW (Hyperbolic Space) vs. IVF (Inverted File).,"[9, 1, 2, 4, 5]",17.227400006959215,598.3644000079948,1070.9832000138704,1686.5750000288244,None,review: low lexical overlap; manual inspection required
+37,Which practice problem lists does the DSA plan recommend?,"The DSA plan recommends the following practice problem lists:
+
+1. Arrays & Two Pointers
+2. Hashing
+3. Binary Search
+4. Strings
+5. Recursion & Backtracking
+6. Linked Lists
+7. Stacks & Queues
+8. Trees","[9, 10, 1, 6, 8]",17.904400010593235,588.1322000059299,2162.6073000079487,2768.643900024472,Retrieval,pass: lexical overlap with supplied context
+38,What book is recommended for ML system design?,"""Designing Machine Learning Systems"" by Chip Huyen.","[1, 9, 10, 4, 7]",16.330899990862235,573.9363000029698,958.6371000041254,1548.9042999979574,None,pass: lexical overlap with supplied context
+39,What is planned for weeks 1 and 2 of the roadmap?,"Project 1 (DocuMind RAG API) + DSA: Arrays, Hashing, Two Pointers, Binary Search.","[10, 1, 7, 9, 6]",24.27009999519214,617.1060000197031,1206.1740000208374,1847.5501000357326,None,pass: lexical overlap with supplied context
+40,What is the population of Mars according to this document?,I don't know based on the provided documents.,"[2, 5, 1, 4, 9]",19.967100000940263,575.6247999961488,742.9057999979705,1338.4976999950595,None,pass: refused unsupported question
+41,What monthly salary does this roadmap guarantee?,I don't know based on the provided documents.,"[10, 1, 8, 3, 7]",18.319299997529015,558.1039999960922,603.6972000147216,1180.1205000083428,None,pass: refused unsupported question
+42,"Which cloud provider (AWS, GCP, or Azure) does the roadmap require?",I don't know based on the provided documents.,"[10, 1, 7, 8, 2]",15.839400002732873,592.0848000096157,624.6404000266921,1232.5646000390407,None,pass: refused unsupported question
+43,How many GitHub stars does the DocuMind repository have?,I don't know based on the provided documents.,"[10, 1, 2, 7, 4]",21.7615999863483,612.3021000239532,813.8395999849308,1447.9032999952324,None,pass: refused unsupported question
