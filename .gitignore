@@ -15,6 +15,7 @@ __pycache__/
 # Local vector database and generated runtime data
 qdrant_storage/
 qdrant_storage_*/
+experiment/feedback_log.jsonl
 
 # OS and editor files
 .DS_Store
