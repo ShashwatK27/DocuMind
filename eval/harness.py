@@ -24,7 +24,7 @@ from langchain_core.documents import Document
 from app.config import settings
 from app.ingestion.chunker import split_documents
 from app.ingestion.loader import load_pdf, page_number
-from app.retrieval.retriever import build_memory_store, retrieve
+from app.retrieval.retriever import build_bm25, build_memory_store, retrieve
 from eval.golden_set import golden_set
 
 
@@ -80,12 +80,18 @@ def check_grounding(page_text: dict[tuple[str, int], str]) -> list[str]:
 
 
 def evaluate() -> tuple[dict, list[dict]]:
-    chunks, page_text = load_corpus()
+    chunks, _ = load_corpus()
     store = build_memory_store(chunks)
+    bm25 = build_bm25(chunks)
+    return _score(store, chunks, bm25, use_hybrid=settings.hybrid_enabled)
 
+
+def _score(store, chunks, bm25, use_hybrid: bool) -> tuple[dict, list[dict]]:
+    """Score the golden set with one retrieval mode against a prebuilt corpus."""
     per_q: list[dict] = []
     for rec in golden_set:
-        final = retrieve(rec["question"], store=store)
+        final = retrieve(rec["question"], store=store, chunks=chunks,
+                         bm25=bm25, use_hybrid=use_hybrid)
         retrieved = [(_basename(c.document.metadata.get("source")), c.page) for c in final]
         contexts = [c.document.page_content for c in final]
         expected = {(rec["source"], p) for p in rec["source_pages"]}
@@ -117,44 +123,92 @@ def evaluate() -> tuple[dict, list[dict]]:
     return metrics, per_q
 
 
+def _print_metrics(title: str, metrics: dict) -> None:
+    print(f"=== {title} ===")
+    for k, v in metrics.items():
+        print(f"  {k:>16}: {v:.3f}" if isinstance(v, float) else f"  {k:>16}: {v}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="DocuMind evaluation harness")
     parser.add_argument("--no-csv", action="store_true", help="don't write result CSVs")
+    parser.add_argument("--compare", action="store_true",
+                        help="evaluate dense vs hybrid (BM25+dense RRF) side by side")
     args = parser.parse_args()
 
-    _, page_text = load_corpus()
+    chunks, page_text = load_corpus()
     warnings = check_grounding(page_text)
     if warnings:
         print("Grounding warnings (answer terms missing from claimed page):")
         print("\n".join(warnings), "\n")
 
-    metrics, per_q = evaluate()
-    print("=== DocuMind evaluation ===")
-    for k, v in metrics.items():
-        print(f"  {k:>16}: {v:.3f}" if isinstance(v, float) else f"  {k:>16}: {v}")
+    store = build_memory_store(chunks)
+    bm25 = build_bm25(chunks)
 
-    misses = [r for r in per_q if r["answerable"] and not r["recall5"]]
-    if misses:
-        print("\nRecall@5 misses:")
-        for r in misses:
-            print(f"  [{r['source']}] {r['question']!r} -> {r['retrieved'][:5]}")
+    if not args.compare:
+        metrics, per_q = _score(store, chunks, bm25, use_hybrid=settings.hybrid_enabled)
+        _print_metrics("DocuMind evaluation", metrics)
+        misses = [r for r in per_q if r["answerable"] and not r["recall5"]]
+        if misses:
+            print("\nRecall@5 misses:")
+            for r in misses:
+                print(f"  [{r['source']}] {r['question']!r} -> {r['retrieved'][:5]}")
+        if not args.no_csv:
+            _write_csv("eval", metrics, per_q)
+        return
+
+    # --- dense vs hybrid comparison (D-15) ---
+    dense_m, dense_q = _score(store, chunks, bm25, use_hybrid=False)
+    hybrid_m, hybrid_q = _score(store, chunks, bm25, use_hybrid=True)
+    _print_metrics("Dense (baseline)", dense_m)
+    print()
+    _print_metrics("Hybrid (dense pool augmented with BM25)", hybrid_m)
+
+    print("\n=== Delta (hybrid - dense) ===")
+    for k in ("page_recall@5", "mrr", "coverage", "coverage>=0.5"):
+        print(f"  {k:>16}: {hybrid_m[k] - dense_m[k]:+.3f}")
+
+    dense_miss = {r["question"] for r in dense_q if r["answerable"] and not r["recall5"]}
+    hybrid_miss = {r["question"] for r in hybrid_q if r["answerable"] and not r["recall5"]}
+    recovered = dense_miss - hybrid_miss
+    introduced = hybrid_miss - dense_miss
+    print(f"\nRecall@5 misses: dense {len(dense_miss)} -> hybrid {len(hybrid_miss)}")
+    for q in sorted(recovered):
+        print(f"  RECOVERED by hybrid: {q!r}")
+    for q in sorted(introduced):
+        print(f"  NEW miss from hybrid: {q!r}")
+    for q in sorted(hybrid_miss & dense_miss):
+        print(f"  still missed: {q!r}")
 
     if not args.no_csv:
         import csv
         out = Path("experiment")
         out.mkdir(exist_ok=True)
-        with (out / "eval_summary.csv").open("w", newline="", encoding="utf-8") as fh:
+        with (out / "hybrid_vs_dense_results.csv").open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
-            w.writerow(["metric", "value"])
-            for k, v in metrics.items():
-                w.writerow([k, v])
-        with (out / "eval_per_question.csv").open("w", newline="", encoding="utf-8") as fh:
-            w = csv.DictWriter(fh, fieldnames=["source", "question", "type",
-                                               "answerable", "recall5", "mrr", "coverage"])
-            w.writeheader()
-            for r in per_q:
-                w.writerow({k: r[k] for k in w.fieldnames})
-        print(f"\nWrote {out/'eval_summary.csv'} and {out/'eval_per_question.csv'}")
+            w.writerow(["metric", "dense", "hybrid", "delta"])
+            for k in ("page_recall@5", "mrr", "coverage", "coverage>=0.5"):
+                w.writerow([k, round(dense_m[k], 4), round(hybrid_m[k], 4),
+                            round(hybrid_m[k] - dense_m[k], 4)])
+        print(f"\nWrote {out/'hybrid_vs_dense_results.csv'}")
+
+
+def _write_csv(prefix: str, metrics: dict, per_q: list[dict]) -> None:
+    import csv
+    out = Path("experiment")
+    out.mkdir(exist_ok=True)
+    with (out / f"{prefix}_summary.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["metric", "value"])
+        for k, v in metrics.items():
+            w.writerow([k, v])
+    with (out / f"{prefix}_per_question.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=["source", "question", "type",
+                                           "answerable", "recall5", "mrr", "coverage"])
+        w.writeheader()
+        for r in per_q:
+            w.writerow({k: r[k] for k in w.fieldnames})
+    print(f"\nWrote {out/f'{prefix}_summary.csv'} and {out/f'{prefix}_per_question.csv'}")
 
 
 if __name__ == "__main__":
