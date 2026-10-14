@@ -1,0 +1,3 @@
+# Development + CI dependencies (the service deps plus the test runner).
+-r requirements.txt
+pytest==9.1.1
