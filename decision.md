@@ -334,6 +334,34 @@ pipeline functions:** it would couple `retriever`/`generator` to Langfuse and
 trace eval/test runs too; wrapping at the HTTP boundary keeps the core clean and
 only traces real requests.
 
+### D-21 — Ragas: local, decoupled via a JSONL seam; CI stays deterministic
+**Decision.** Keep Ragas evaluation **local and opt-in**, run in its **own
+environment**, fed by a JSONL seam the service env produces
+(`python -m eval --dump-ragas …` → `scripts/ragas_eval.py`). Do **not** add Ragas
+to the service or CI dependencies; the deterministic retrieval regression gate
+(D-18) remains the only CI quality gate. **Why — measured, not assumed.** Ragas
+cannot share an interpreter with the validated stack: its current release
+(`ragas 0.4.3`) fails to import even in a clean venv against today's
+`langchain-community` (`ModuleNotFoundError: langchain_community.chat_models.vertexai`),
+and pinning an older `langchain-community` to satisfy it cascades into
+`langchain-core`, `langgraph`, `numpy` and `pyarrow` conflicts. It also pulls a
+hosted-LLM stack (`langchain_openai`/`openai`), against this project's local-first
+stance. **Design.** A two-stage hand-off cleanly separates the incompatible
+stacks: stage 1 (service env) retrieves + generates and writes
+`{user_input, retrieved_contexts, response, reference, reference_contexts}` per
+answerable question; stage 2 (a dedicated Ragas venv) scores it with **Ollama as
+judge + MiniLM embeddings** — no hosted API, no keys. **Why not in CI.** The
+headline metrics (faithfulness, answer relevancy, context precision/recall) are
+LLM-judged and **nondeterministic**, unfit for a hard build gate, and CI has no
+Ollama; a hosted judge would mean API keys as CI secrets and per-run cost.
+**Interim quality signal.** D-19's answer-term accuracy + 100% unanswerable
+refusal already give a local, dependency-free faithfulness/correctness proxy.
+**Rejected — forcing Ragas into the service env or CI:** it breaks the validated
+install and abandons local-first for a nondeterministic gate. **Status.** The
+producer is shipped and tested; the scorer is written against Ragas' documented
+API and runs once Ragas is installed in its own env (its current upstream import
+bug is the only blocker).
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)

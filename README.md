@@ -142,7 +142,7 @@ app/            FastAPI service (the locked pipeline)
 eval/           source-aware evaluation harness (python -m eval)
   golden_set.py   63 hand-grounded questions over the 4-document corpus
   harness.py      loads every PDF, runs the real app pipeline, scores it
-scripts/        fetch_corpus.py (corpus), check_eval.py (CI regression gate)
+scripts/        fetch_corpus.py (corpus), check_eval.py (CI gate), ragas_eval.py (local Ragas)
 tests/          fast, network-free unit tests for the pipeline invariants
 notebooks/      rag_1.ipynb — the experiments that selected the config
 experiment/     measured results (CSV/JSON) behind every decision
@@ -173,6 +173,18 @@ asks "did we say it?"; the gap (0.754 → 0.500 on `llama3.2:3b`) isolates
 generation loss, and all 4 unanswerable questions are refused (D-19). It needs a
 reachable Ollama, so it stays local and out of CI.
 
+**Ragas** (faithfulness, answer relevancy, context precision/recall) runs as a
+local, opt-in step in its **own** environment, because it conflicts with the
+pinned langchain stack (D-21). The service env emits a JSONL seam and a dedicated
+Ragas venv scores it with a local Ollama judge:
+
+```bash
+python -m eval --dump-ragas experiment/ragas_input.jsonl   # service env
+python -m venv .ragas && .ragas/Scripts/activate           # dedicated Ragas env
+pip install ragas langchain-ollama langchain-huggingface
+python scripts/ragas_eval.py experiment/ragas_input.jsonl
+```
+
 ## Development & tests
 
 ```bash
@@ -199,10 +211,11 @@ multi-document corpus, and guarded by CI. Logged next steps:
   points at the golden-set page, the full metric list is on another — left
   standing rather than relabelled.
 - ✅ Unit tests + CI with an eval regression gate (D-18).
-- Add an answer-term **accuracy** metric (not just coverage) to catch wrong-list
-  answers.
-- Wire **Langfuse** tracing for per-stage latency/cost.
-- Add **Ragas** context-precision/recall in CI against the golden set.
+- ✅ Answer-term **accuracy** metric to catch wrong-list answers (`--generate`, D-19).
+- ✅ Optional **Langfuse** per-stage tracing, env-gated (D-20).
+- ✅ **Ragas** wired as a local, opt-in evaluation via a JSONL seam
+  (`--dump-ragas` → `scripts/ragas_eval.py`), decoupled from the service stack and
+  judged by local Ollama; CI stays deterministic (D-21).
 
 ## Tech stack
 

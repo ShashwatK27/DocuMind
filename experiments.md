@@ -24,6 +24,24 @@ Qdrant index per ingestion configuration, and cosine distance.
 
 ## Timeline of changes
 
+### 2026-10-15 — Ragas: decoupled via a JSONL seam (local, not CI)
+
+Wired Ragas as a **local, opt-in** evaluation rather than a CI gate. Ragas can't
+share an interpreter with the validated langchain stack — its current release
+(`0.4.3`) fails to import even in a clean venv (`ModuleNotFoundError:
+langchain_community.chat_models.vertexai`), and unpinning to fix it cascades into
+`langchain-core`/`langgraph`/`numpy`/`pyarrow` conflicts; it also pulls a
+hosted-LLM stack against local-first. So the two stacks are decoupled by a JSONL
+hand-off: `python -m eval --dump-ragas experiment/ragas_input.jsonl` (service env)
+emits `{user_input, retrieved_contexts, response, reference, reference_contexts}`
+per answerable question, and `scripts/ragas_eval.py` scores it in a dedicated
+Ragas venv with **Ollama as judge + MiniLM embeddings** (faithfulness, answer
+relevancy, context precision/recall). The producer is shipped and tested; the
+scorer runs once Ragas is installed in its own env. CI keeps the deterministic
+retrieval gate (D-18); the LLM-judged Ragas metrics are nondeterministic and stay
+a local report. D-19's answer-accuracy + 100% refusal remain the dependency-free
+quality proxy in the meantime. Recorded as D-21.
+
 ### 2026-10-15 — Generation-aware eval: answer-term accuracy vs context coverage
 
 Added an opt-in `python -m eval --generate` mode that runs the full pipeline
