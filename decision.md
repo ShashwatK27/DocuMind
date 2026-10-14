@@ -300,6 +300,40 @@ across library versions; a floor catches regressions without false alarms.
 would pull model weights and the arXiv PDFs, making the "fast" gate slow and
 network-bound; that coverage lives in the eval job instead.
 
+### D-19 — Generation-aware eval: answer-term accuracy
+**Decision.** Add an opt-in `--generate` mode to the harness that runs the full
+pipeline through the LLM and scores **answer-term accuracy** (ground-truth terms
+present in the *generated answer*) next to **context coverage** (terms present in
+the *retrieved context*), plus the refusal rate on unanswerable questions.
+**Why.** Coverage conflates two different failures — "we didn't retrieve it" and
+"we retrieved it but the model didn't say it." Splitting them turns a vague
+quality number into an actionable one. **Outcome (4-doc, llama3.2:3b, temp 0).**
+Coverage 0.754 vs answer accuracy 0.500 — a ~25-point generation gap — and 4/4
+unanswerable correctly refused. The mode prints the "generation loss" rows
+(coverage ≥ 0.5, accuracy < 0.5) for triage. **Honest limitation.** Accuracy
+reuses coverage's exact ≥5-char term matching, so synonyms/inflections
+undercount (singular "project" ≠ "projects"); it is a review-flagging proxy, not
+a verdict, and is deliberately kept identical to coverage's tokenizer so the two
+are directly comparable. **Not in CI.** Generation needs a reachable Ollama,
+which CI doesn't have; the CI gate stays retrieval-only (D-18). Kept local and
+opt-in so the deterministic retrieval metrics remain the default.
+
+### D-20 — Optional Langfuse per-stage tracing
+**Decision.** Instrument `/query` with Langfuse spans (a `query` trace with
+`retrieval` and `generation` child spans carrying latency + metadata) behind a
+dependency-optional, env-gated wrapper (`app/observability.py`). It is a complete
+no-op unless both `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` are set and the
+package imports; all tracing calls swallow their own exceptions. **Why.** The
+roadmap calls for per-stage latency/cost visibility, but the project is
+local-first and the repo is public — tracing must never be required, leak keys,
+or be able to break a request. **Design.** Langfuse 5's OpenTelemetry API
+(`start_as_current_observation`) so span nesting follows context automatically;
+`/health` reports whether tracing is live; keys come from `.env` (see
+`.env.example`), never the repo. **Rejected — the `@observe` decorator on
+pipeline functions:** it would couple `retriever`/`generator` to Langfuse and
+trace eval/test runs too; wrapping at the HTTP boundary keeps the core clean and
+only traces real requests.
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)

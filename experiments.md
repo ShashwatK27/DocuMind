@@ -24,6 +24,35 @@ Qdrant index per ingestion configuration, and cosine distance.
 
 ## Timeline of changes
 
+### 2026-10-15 — Generation-aware eval: answer-term accuracy vs context coverage
+
+Added an opt-in `python -m eval --generate` mode that runs the full pipeline
+through the LLM and scores each answer for **answer-term accuracy** — the share
+of ground-truth terms the *generated answer* actually states — alongside the
+existing **context coverage** (terms present in the *retrieved context*). Coverage
+asks "did we retrieve it?"; accuracy asks "did we say it?", so the gap isolates
+generation loss. Measured on the 4-doc corpus with `llama3.2:3b` (temp 0):
+
+| metric | value | reads as |
+|---|---:|---|
+| context coverage | 0.754 | the answer was in the retrieved context |
+| **answer accuracy** | **0.500** | the generated answer stated the ground-truth terms |
+| accuracy ≥ 0.5 | 0.525 | share of answers that mostly stated it |
+| unanswerable refused | **1.000** | all 4 unanswerable questions correctly refused |
+
+The **~25-point coverage→accuracy gap** is the headline: retrieval is strong, but
+the 3B model frequently has the right context and still omits the exact terms.
+The `--generate` report lists the "generation loss" cases (coverage ≥ 0.5 but
+accuracy < 0.5) to triage. **Caveat (honest):** accuracy is exact-term recall
+with the same ≥5-char tokenizer as coverage, so it undercounts correct answers
+that use a synonym or a different inflection (e.g. the model's singular "project"
+vs the ground truth's "projects"). It is a *proxy that flags candidates for
+review*, not a verdict — the gap and the per-question list are the signal. This
+is the natural successor the earlier rounds kept flagging (open issue #2/#6:
+measure accuracy, not just coverage, to catch the wrong-list case). Retrieval
+metrics are unchanged (deterministic); generation is not scored in CI (no Ollama
+there). Recorded as D-19.
+
 ### 2026-10-14 — Query-aware fusion: closed 2 of the 3 residual misses
 
 Hybrid augmentation (above) put the exact-match chunks *in the candidate pool*,

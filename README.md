@@ -159,11 +159,19 @@ not committed). Download them and run the harness:
 ```bash
 python scripts/fetch_corpus.py   # -> data/documents/*.pdf
 python -m eval                   # Recall@5, MRR, coverage over the golden set
+python -m eval --generate        # also run the LLM and score answer-term accuracy
 ```
 
 The harness indexes every PDF through the exact `app` pipeline, so its numbers
 can never drift from what the service actually does, and it keys ground truth on
 `(source, page)` so a multi-document corpus is scored correctly.
+
+`--generate` additionally runs the full pipeline through the LLM and reports
+**answer-term accuracy** — the share of ground-truth terms the *generated answer*
+states — next to context coverage. Coverage asks "did we retrieve it?", accuracy
+asks "did we say it?"; the gap (0.754 → 0.500 on `llama3.2:3b`) isolates
+generation loss, and all 4 unanswerable questions are refused (D-19). It needs a
+reachable Ollama, so it stays local and out of CI.
 
 ## Development & tests
 
