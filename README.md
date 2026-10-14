@@ -1,5 +1,7 @@
 # DocuMind — a document question-answering RAG service
 
+[![CI](https://github.com/ShashwatK27/DocuMind/actions/workflows/ci.yml/badge.svg)](https://github.com/ShashwatK27/DocuMind/actions/workflows/ci.yml)
+
 Ask questions about a PDF and get a grounded, cited answer — or an honest "I
 don't know" when the document doesn't support one. DocuMind is a retrieval-
 augmented generation (RAG) service whose every hyperparameter was **chosen from
@@ -140,11 +142,13 @@ app/            FastAPI service (the locked pipeline)
 eval/           source-aware evaluation harness (python -m eval)
   golden_set.py   63 hand-grounded questions over the 4-document corpus
   harness.py      loads every PDF, runs the real app pipeline, scores it
-scripts/        fetch_corpus.py — download the arXiv evaluation corpus
+scripts/        fetch_corpus.py (corpus), check_eval.py (CI regression gate)
+tests/          fast, network-free unit tests for the pipeline invariants
 notebooks/      rag_1.ipynb — the experiments that selected the config
 experiment/     measured results (CSV/JSON) behind every decision
 experiments.md  the experiment log
 decision.md     what was decided, why, and what was rejected
+.github/        CI: unit tests + the eval regression gate on every push
 ```
 
 ## Evaluation
@@ -161,15 +165,32 @@ The harness indexes every PDF through the exact `app` pipeline, so its numbers
 can never drift from what the service actually does, and it keys ground truth on
 `(source, page)` so a multi-document corpus is scored correctly.
 
+## Development & tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest                      # fast, network-free unit tests (no model downloads)
+python scripts/check_eval.py   # the regression gate: eval the golden set, fail on a drop
+```
+
+CI (`.github/workflows/ci.yml`) runs both on every push and PR:
+
+- **Unit tests** cover the pipeline invariants — metadata enrichment, BM25, the
+  query-aware fusion maths (D-17), page diversification, and the citation strip.
+- **Eval regression gate** fetches the corpus and fails the build if Page
+  Recall@5, MRR or coverage falls below the thresholds the shipped config has
+  earned — the roadmap's "regression-tested quality" step.
+
 ## Status & roadmap
 
-The retrieval/generation pipeline is **locked** and served, and now evaluated on a
-multi-document corpus. Logged next steps:
+The retrieval/generation pipeline is **locked**, served, evaluated on a
+multi-document corpus, and guarded by CI. Logged next steps:
 
 - ✅ Closed 2 of the 3 residual misses with query-aware fusion (D-17). The 1
   remaining (roadmap *Ragas*) is a genuinely ambiguous grounding — the query
   points at the golden-set page, the full metric list is on another — left
   standing rather than relabelled.
+- ✅ Unit tests + CI with an eval regression gate (D-18).
 - Add an answer-term **accuracy** metric (not just coverage) to catch wrong-list
   answers.
 - Wire **Langfuse** tracing for per-stage latency/cost.

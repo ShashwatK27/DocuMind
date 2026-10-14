@@ -273,6 +273,33 @@ rank-fusion used for *candidate selection* (it evicted dense chunks before
 rerank); this is score-fusion at the *final* stage over a pool that already keeps
 every dense chunk, so nothing is evicted.
 
+### D-18 — Unit tests + CI with an eval regression gate
+**Decision.** Add a fast, network-free `pytest` suite plus a GitHub Actions
+workflow (`.github/workflows/ci.yml`) that runs on every push/PR with two jobs:
+**unit tests** (pipeline invariants) and an **eval regression gate**
+(`scripts/check_eval.py`) that fetches the corpus, runs the real `eval` harness,
+and fails the build if Page Recall@5, MRR or coverage drops below a floor.
+**Why.** The repo is now public and the roadmap's own thesis (p2) is that
+automated, on-every-push quality checks are "what turns *I built RAG* into *I
+built a RAG system with regression-tested quality*." A green badge on the repo is
+the visible proof. **What the tests cover.** Pure, deterministic logic with no
+model downloads: metadata enrichment prefix + split (chunker), `_tok`/BM25
+ordering, `_zscore`, the D-17 fusion maths (exact formula + α-scaling promotion),
+`_diversify` (1/page cap, top-k truncation, source-aware), the citation strip
+(leak removal + exact-refusal preservation) and the no-chunks refusal path, and
+the config defaults (so a stray edit can't silently change the served pipeline).
+**Thresholds.** Recall@5 ≥ 0.95, MRR ≥ 0.88, coverage ≥ 0.72 — a margin below the
+measured 0.983 / 0.897 / 0.754 (D-17) to tolerate library drift without masking a
+real regression. **Design choices.** Unit tests avoid the embedder/cross-encoder
+so they run in ~12 s and need no network; the heavier eval job caches the HF
+weights and is a separate job so unit tests give fast feedback. The eval gate
+needs no Ollama (it scores retrieval only). `requirements-dev.txt` layers `pytest`
+on the pinned service deps. **Rejected — asserting exact metric values:** brittle
+across library versions; a floor catches regressions without false alarms.
+**Rejected — a store-backed retrieval integration test in the unit suite:** it
+would pull model weights and the arXiv PDFs, making the "fast" gate slow and
+network-bound; that coverage lives in the eval job instead.
+
 ---
 
 ## Standing assumptions (challenge any of these if wrong)
