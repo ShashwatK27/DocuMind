@@ -27,6 +27,11 @@ uvicorn[standard]==0.54.0
 python-multipart==0.0.32
 pydantic-settings==2.15.0
 
+# --- Observability (optional) ---
+# Per-stage tracing; a complete no-op unless LANGFUSE_PUBLIC_KEY/SECRET_KEY are
+# set (see app/observability.py and .env.example).
+langfuse==5.0.1
+
 # --- Experiment notebook (notebooks/rag_1.ipynb) ---
 pandas==3.0.6
 matplotlib==3.11.2
@@ -36,4 +41,3 @@ nbclient==0.11.0
 
 # --- Deferred (not yet installed) ---
 # ragas            # context-level evaluation in CI (next step)
-# langfuse         # per-stage latency/cost tracing (next step)

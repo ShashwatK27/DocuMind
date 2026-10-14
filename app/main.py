@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import shutil
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,17 +23,27 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app import __version__
+from app import observability as obs
 from app.config import settings
 from app.generation.generator import generator
 from app.ingestion.chunker import split_documents
 from app.ingestion.loader import load_pdf
 from app.retrieval.retriever import collection_size, index_chunks, retrieve
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # Langfuse sends spans in a background thread; flush any buffered ones on
+    # shutdown so nothing is lost. No-op when tracing is disabled (D-20).
+    obs.flush()
+
+
 app = FastAPI(
     title="DocuMind",
     version=__version__,
     description="Document question-answering RAG service. "
     "Retrieval + generation config is the one selected in decision.md.",
+    lifespan=lifespan,
 )
 
 _FEEDBACK_LOG = Path("experiment/feedback_log.jsonl")
@@ -96,6 +107,7 @@ def health() -> dict:
         "version": __version__,
         "indexed_chunks": collection_size(),
         "generation_available": settings.generation_enabled and generator.available,
+        "tracing": obs.enabled(),
         "config": {
             "embedding_model": settings.embedding_model,
             "reranker_model": settings.reranker_model,
@@ -147,30 +159,43 @@ def query(req: QueryRequest) -> QueryResponse:
     if collection_size() == 0:
         raise HTTPException(409, "Nothing indexed yet. POST a PDF to /ingest first.")
 
-    t0 = time.perf_counter()
-    chunks = retrieve(req.question)
-    t_retrieve = (time.perf_counter() - t0) * 1000
+    with obs.observe("query", question=req.question, generate=req.generate) as root:
+        t0 = time.perf_counter()
+        with obs.observe("retrieval", as_type="retriever") as rspan:
+            chunks = retrieve(req.question)
+        t_retrieve = (time.perf_counter() - t0) * 1000
+        obs.update(rspan, metadata={"latency_ms": round(t_retrieve, 1),
+                                    "candidates": len(chunks),
+                                    "hybrid": settings.hybrid_enabled,
+                                    "fusion_alpha": settings.fusion_alpha},
+                   output=[f"{c.document.metadata.get('source', '?')} p{c.page}" for c in chunks])
 
-    sources = [
-        SourceChunk(
-            page=c.page,
-            source=str(c.document.metadata.get("source", "document")).replace("\\", "/").split("/")[-1],
-            retrieval_score=round(c.retrieval_score, 4),
-            reranker_score=round(c.reranker_score, 4) if c.reranker_score is not None else None,
-            preview=c.document.page_content[:200],
-        )
-        for c in chunks
-    ]
+        sources = [
+            SourceChunk(
+                page=c.page,
+                source=str(c.document.metadata.get("source", "document")).replace("\\", "/").split("/")[-1],
+                retrieval_score=round(c.retrieval_score, 4),
+                reranker_score=round(c.reranker_score, 4) if c.reranker_score is not None else None,
+                preview=c.document.page_content[:200],
+            )
+            for c in chunks
+        ]
 
-    answer = refused = None
-    citations: list[Citation] = []
-    t_generate = 0.0
-    if req.generate and settings.generation_enabled:
-        t1 = time.perf_counter()
-        result = generator.generate(req.question, chunks)
-        t_generate = (time.perf_counter() - t1) * 1000
-        answer, refused = result.text, result.refused
-        citations = [Citation(source=c.source, page=c.page) for c in result.citations]
+        answer = refused = None
+        citations: list[Citation] = []
+        t_generate = 0.0
+        if req.generate and settings.generation_enabled:
+            t1 = time.perf_counter()
+            with obs.observe("generation", as_type="generation",
+                             model=settings.ollama_model) as gspan:
+                result = generator.generate(req.question, chunks)
+            t_generate = (time.perf_counter() - t1) * 1000
+            answer, refused = result.text, result.refused
+            citations = [Citation(source=c.source, page=c.page) for c in result.citations]
+            obs.update(gspan, output=answer,
+                       metadata={"latency_ms": round(t_generate, 1), "refused": refused})
+
+        obs.update(root, output={"refused": refused, "citations": len(citations)})
 
     return QueryResponse(
         question=req.question,
