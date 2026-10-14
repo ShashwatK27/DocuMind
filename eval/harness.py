@@ -16,6 +16,7 @@ Unanswerable questions are reported separately (they have no expected page).
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -145,6 +146,37 @@ def _score(store, chunks, bm25, use_hybrid: bool,
     return metrics, per_q
 
 
+def dump_ragas(path: str, store, chunks, bm25,
+               page_text: dict[tuple[str, int], str]) -> int:
+    """Write one Ragas ``SingleTurnSample`` per answerable question as JSONL.
+
+    Ragas' current release does not import against this project's pinned
+    langchain stack (see decision.md D-21), so scoring runs in a *separate*
+    environment. This producer stays in the service env and hands the two sides
+    a clean JSONL seam: question, the contexts we actually retrieved, the answer
+    we actually generated, and the ground-truth reference + reference contexts.
+    ``scripts/ragas_eval.py`` consumes it. Needs a reachable Ollama.
+    """
+    rows = []
+    for rec in golden_set:
+        if not rec["source_pages"]:
+            continue  # unanswerable questions have no reference to score against
+        final = retrieve(rec["question"], store=store, chunks=chunks,
+                         bm25=bm25, use_hybrid=settings.hybrid_enabled)
+        answer = generator.generate(rec["question"], final)
+        rows.append({
+            "user_input": rec["question"],
+            "retrieved_contexts": [c.document.page_content for c in final],
+            "response": answer.text,
+            "reference": rec["ground_truth"],
+            "reference_contexts": [page_text.get((rec["source"], p), "")
+                                   for p in rec["source_pages"]],
+        })
+    Path(path).write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    print(f"Wrote {len(rows)} Ragas samples to {path}")
+    return len(rows)
+
+
 def _print_metrics(title: str, metrics: dict) -> None:
     print(f"=== {title} ===")
     for k, v in metrics.items():
@@ -158,6 +190,9 @@ def main() -> None:
                         help="evaluate dense vs hybrid side by side")
     parser.add_argument("--generate", action="store_true",
                         help="run the LLM and score answer-term accuracy (needs Ollama)")
+    parser.add_argument("--dump-ragas", metavar="PATH",
+                        help="write Ragas-shaped samples as JSONL for scripts/ragas_eval.py "
+                             "(needs Ollama); scored in a separate env (D-21)")
     args = parser.parse_args()
 
     chunks, page_text = load_corpus()
@@ -168,6 +203,13 @@ def main() -> None:
 
     store = build_memory_store(chunks)
     bm25 = build_bm25(chunks)
+
+    if args.dump_ragas:
+        if not generator.available:
+            raise SystemExit("--dump-ragas needs a reachable Ollama "
+                             f"({settings.ollama_model}); none found.")
+        dump_ragas(args.dump_ragas, store, chunks, bm25, page_text)
+        return
 
     if not args.compare:
         if args.generate and not generator.available:

@@ -17,6 +17,15 @@ qdrant_storage/
 qdrant_storage_*/
 experiment/feedback_log.jsonl
 
+# Ragas seam + results: regenerable, and embed verbatim arXiv page text
+# (reference/retrieved contexts), so not redistributed. Rebuild with
+# `python -m eval --dump-ragas` (see D-21).
+experiment/ragas_input.jsonl
+experiment/ragas_results.csv
+
+# Dedicated Ragas virtualenv (D-21)
+.ragas/
+
 # Third-party evaluation corpus (fetched via scripts/fetch_corpus.py).
 # The user's own roadmap PDF stays tracked.
 data/documents/*.pdf

@@ -39,5 +39,9 @@ scikit-learn==1.9.1
 ipykernel==7.4.0
 nbclient==0.11.0
 
-# --- Deferred (not yet installed) ---
-# ragas            # context-level evaluation in CI (next step)
+# --- Ragas (local, opt-in; its OWN env — do not install here) ---
+# Ragas conflicts with the pinned langchain stack (D-21), so it runs in a
+# separate venv against the JSONL seam from `python -m eval --dump-ragas`:
+#   python -m venv .ragas && .ragas\Scripts\activate
+#   pip install ragas langchain-ollama langchain-huggingface
+#   python scripts/ragas_eval.py experiment/ragas_input.jsonl
