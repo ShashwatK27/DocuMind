@@ -22,6 +22,7 @@ from pathlib import Path
 from langchain_core.documents import Document
 
 from app.config import settings
+from app.generation.generator import generator
 from app.ingestion.chunker import split_documents
 from app.ingestion.loader import load_pdf, page_number
 from app.retrieval.retriever import build_bm25, build_memory_store, retrieve
@@ -86,8 +87,16 @@ def evaluate() -> tuple[dict, list[dict]]:
     return _score(store, chunks, bm25, use_hybrid=settings.hybrid_enabled)
 
 
-def _score(store, chunks, bm25, use_hybrid: bool) -> tuple[dict, list[dict]]:
-    """Score the golden set with one retrieval mode against a prebuilt corpus."""
+def _score(store, chunks, bm25, use_hybrid: bool,
+           generate: bool = False) -> tuple[dict, list[dict]]:
+    """Score the golden set with one retrieval mode against a prebuilt corpus.
+
+    With ``generate=True`` the full pipeline runs through the LLM and each answer
+    is scored for *answer-term accuracy* — the fraction of ground-truth terms the
+    generated answer actually states. Context *coverage* asks "did we retrieve the
+    answer?"; answer accuracy asks "did we say it?", so the gap between them
+    isolates generation loss (the wrong-list case). Requires a reachable Ollama.
+    """
     per_q: list[dict] = []
     for rec in golden_set:
         final = retrieve(rec["question"], store=store, chunks=chunks,
@@ -104,10 +113,17 @@ def _score(store, chunks, bm25, use_hybrid: bool) -> tuple[dict, list[dict]]:
                 rr = 1 / rank
                 break
         cov = content_coverage(contexts, rec["ground_truth"]) if answerable else None
-        per_q.append({"source": rec["source"], "question": rec["question"],
-                      "type": rec["type"], "answerable": answerable,
-                      "retrieved": retrieved, "recall5": recall5, "mrr": rr,
-                      "coverage": cov})
+
+        row = {"source": rec["source"], "question": rec["question"],
+               "type": rec["type"], "answerable": answerable,
+               "retrieved": retrieved, "recall5": recall5, "mrr": rr,
+               "coverage": cov}
+        if generate:
+            answer = generator.generate(rec["question"], final)
+            row["refused"] = answer.refused
+            row["accuracy"] = (content_coverage([answer.text], rec["ground_truth"])
+                               if answerable else None)
+        per_q.append(row)
 
     ans = [r for r in per_q if r["answerable"]]
     metrics = {
@@ -120,6 +136,12 @@ def _score(store, chunks, bm25, use_hybrid: bool) -> tuple[dict, list[dict]]:
         "coverage": sum(r["coverage"] for r in ans) / len(ans),
         "coverage>=0.5": sum(r["coverage"] >= 0.5 for r in ans) / len(ans),
     }
+    if generate:
+        unans = [r for r in per_q if not r["answerable"]]
+        metrics["answer_accuracy"] = sum(r["accuracy"] for r in ans) / len(ans)
+        metrics["accuracy>=0.5"] = sum(r["accuracy"] >= 0.5 for r in ans) / len(ans)
+        if unans:
+            metrics["unanswerable_refused"] = sum(r["refused"] for r in unans) / len(unans)
     return metrics, per_q
 
 
@@ -133,7 +155,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="DocuMind evaluation harness")
     parser.add_argument("--no-csv", action="store_true", help="don't write result CSVs")
     parser.add_argument("--compare", action="store_true",
-                        help="evaluate dense vs hybrid (BM25+dense RRF) side by side")
+                        help="evaluate dense vs hybrid side by side")
+    parser.add_argument("--generate", action="store_true",
+                        help="run the LLM and score answer-term accuracy (needs Ollama)")
     args = parser.parse_args()
 
     chunks, page_text = load_corpus()
@@ -146,13 +170,28 @@ def main() -> None:
     bm25 = build_bm25(chunks)
 
     if not args.compare:
-        metrics, per_q = _score(store, chunks, bm25, use_hybrid=settings.hybrid_enabled)
+        if args.generate and not generator.available:
+            raise SystemExit("--generate needs a reachable Ollama "
+                             f"({settings.ollama_model}); none found.")
+        metrics, per_q = _score(store, chunks, bm25,
+                                use_hybrid=settings.hybrid_enabled,
+                                generate=args.generate)
         _print_metrics("DocuMind evaluation", metrics)
         misses = [r for r in per_q if r["answerable"] and not r["recall5"]]
         if misses:
             print("\nRecall@5 misses:")
             for r in misses:
                 print(f"  [{r['source']}] {r['question']!r} -> {r['retrieved'][:5]}")
+        if args.generate:
+            # Where we retrieved the answer (coverage) but didn't state it
+            # (accuracy) — the generation-loss / wrong-list cases.
+            loss = [r for r in per_q if r["answerable"]
+                    and r["coverage"] >= 0.5 and r["accuracy"] < 0.5]
+            if loss:
+                print("\nGeneration loss (context had it, answer missed it):")
+                for r in sorted(loss, key=lambda r: r["accuracy"]):
+                    print(f"  [{r['source']}] cov={r['coverage']:.2f} "
+                          f"acc={r['accuracy']:.2f} {r['question']!r}")
         if not args.no_csv:
             _write_csv("eval", metrics, per_q)
         return
@@ -202,12 +241,14 @@ def _write_csv(prefix: str, metrics: dict, per_q: list[dict]) -> None:
         w.writerow(["metric", "value"])
         for k, v in metrics.items():
             w.writerow([k, v])
+    fieldnames = ["source", "question", "type", "answerable", "recall5", "mrr", "coverage"]
+    if per_q and "accuracy" in per_q[0]:
+        fieldnames += ["accuracy", "refused"]
     with (out / f"{prefix}_per_question.csv").open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["source", "question", "type",
-                                           "answerable", "recall5", "mrr", "coverage"])
+        w = csv.DictWriter(fh, fieldnames=fieldnames)
         w.writeheader()
         for r in per_q:
-            w.writerow({k: r[k] for k in w.fieldnames})
+            w.writerow({k: r.get(k) for k in fieldnames})
     print(f"\nWrote {out/f'{prefix}_summary.csv'} and {out/f'{prefix}_per_question.csv'}")
 
 
